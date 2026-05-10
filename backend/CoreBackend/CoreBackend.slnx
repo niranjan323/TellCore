@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CoreBackend.API/CoreBackend.API.csproj" />
+    <Project Path="src/CoreBackend.Application/CoreBackend.Application.csproj" />
+    <Project Path="src/CoreBackend.Contracts/CoreBackend.Contracts.csproj" />
+    <Project Path="src/CoreBackend.Domain/CoreBackend.Domain.csproj" />
+    <Project Path="src/CoreBackend.Infrastructure/CoreBackend.Infrastructure.csproj" />
+  </Folder>
+</Solution>

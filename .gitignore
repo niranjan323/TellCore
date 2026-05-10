@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+appsettings.Development.json
+*.suo
+*.userprefs
+.idea/
+*.swp
+
+# Node
+node_modules/
+dist/
+.env.local
+.env.*.local
+
+# General
+.DS_Store
+Thumbs.db
+uploads/
+*.log
+*.tmp

@@ -973,8 +973,8 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 16. ProductRepository (interface + class)
 ✅ 17. JwtService (interface + class)
 ✅ 18. Auth — UserRepository + Guest token flow
-19. Auth — Google OAuth (GoogleAuthService)
-20. Auth — Refresh token
+✅ 19. Auth — Google OAuth (GoogleAuthService)
+✅ 20. Auth — Refresh token (implemented in AuthService.RefreshAsync)
 21. AuthController — all 4 endpoints
 22. NavigationRepository + NavigationController
 23. ThemeRepository + ThemesController

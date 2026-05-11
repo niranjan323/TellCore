@@ -987,8 +987,8 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 30. GroqAiSummaryService + voice transcription
 ✅ 31. SubmitResponse — full pipeline (ResponseService orchestrates: answers → AI summary → rule-based fallback → persist)
 ✅ 32. SummaryRepository + ResponsesController
-33. ConfigController
-34. ExceptionMiddleware
+✅ 33. ConfigController + UsersController + SettingsController (non-secret only)
+✅ 34. ExceptionMiddleware
 35. DI wiring in Program.cs
     Test: All endpoints working via Scalar locally
 ```

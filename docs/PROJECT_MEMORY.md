@@ -216,27 +216,27 @@ git commit -m "chore: initial monorepo structure"
 ## 4. CoreBackend — Project Details
 
 ### Technology
-- ASP.NET Core Web API — .NET 10
+- ASP.NET Core Web API — .NET 10 — **single project**
 - SQL Server — database
 - Dapper — all database access (NO Entity Framework, NO ORM ever)
 - All SQL written manually in the repository layer
 - Schema managed by plain `.sql` scripts — no migration tool
-- MediatR — CQRS pattern (commands and queries)
+- ~~MediatR — CQRS pattern~~ → removed (updated 2026-05-11: simplified to direct Controller → Service → Repository pattern)
 - FluentValidation — input validation
 - Serilog — structured logging
 - JWT — authentication tokens
 - Google OAuth — social login
 - Groq API — AI summarisation and voice transcription (via HttpClient, no SDK)
 
-### Layer Rules
+### Pattern Rules
 
-| Layer | Owns | Depends On | Hard Rules |
-|---|---|---|---|
-| Domain | Entities, Enums | Nothing | Zero framework references ever |
-| Application | Business logic, CQRS, Interfaces | Domain, Contracts | No SQL, no HTTP clients, no Dapper here |
-| Infrastructure | Dapper repos, AI, Storage, SQL scripts | Application interfaces | Implements interfaces only |
-| Contracts | Request/Response DTOs | Nothing | No logic ever — just shape |
-| API | Controllers, Middleware, DI wiring | Application, Infrastructure, Contracts | Controllers are thin — only call MediatR |
+| Layer | Owns | Rules |
+|---|---|---|
+| Controllers | HTTP endpoints only | Call services only — no business logic, no SQL |
+| Services | Business logic | Call repositories — implement interface + class |
+| Repositories | All SQL via Dapper | Implement interface + class — raw SQL only |
+| Models | Entities + DTOs | No logic — just shape |
+| Middleware | Cross-cutting concerns | Exception handling, logging |
 
 ### CoreBackend Internal Structure
 ```
@@ -249,113 +249,83 @@ CoreBackend.API/
 │   ├── ResponsesController.cs
 │   ├── SessionsController.cs
 │   └── ThemesController.cs
-├── Middleware/
-│   └── ExceptionMiddleware.cs
-└── Extensions/
-    ├── ApiServiceExtensions.cs
-    └── ApplicationBuilderExtensions.cs
-
-CoreBackend.Application/
-├── Common/
-│   ├── Interfaces/
-│   │   ├── IDbConnectionFactory.cs
-│   │   ├── IRepositories.cs
-│   │   └── IServices.cs
-│   └── Behaviours/
-│       └── ValidationBehaviour.cs
-└── Features/
-    ├── Auth/
-    │   └── Commands/
-    │       ├── CreateGuestCommand.cs
-    │       ├── GoogleLoginCommand.cs
-    │       └── RefreshTokenCommand.cs
-    ├── Config/
-    │   └── Queries/
-    │       └── GetProductConfigQuery.cs
-    ├── Forms/
-    │   └── Queries/
-    │       └── GetFormSetQuery.cs
-    ├── Navigation/
-    │   └── Queries/
-    │       └── GetNavigationQuery.cs
-    ├── Responses/
-    │   ├── Commands/
-    │   │   └── SubmitResponseCommand.cs
-    │   └── Queries/
-    │       └── GetSummaryQuery.cs
-    ├── Sessions/
-    │   └── Commands/
-    │       ├── CreateSessionCommand.cs
-    │       └── UploadVoiceNoteCommand.cs
-    ├── Settings/
-    │   └── Queries/
-    │       └── GetSettingQuery.cs
-    └── Themes/
-        └── Queries/
-            └── GetThemeQuery.cs
-
-CoreBackend.Domain/
-├── Common/
-│   └── BaseEntity.cs
-├── Entities/
-│   ├── Product.cs
-│   ├── Setting.cs
-│   ├── NavigationItem.cs
-│   ├── Theme.cs
-│   ├── FormSet.cs
-│   ├── Intro.cs
-│   ├── Question.cs
-│   ├── Session.cs
-│   └── User.cs
-└── Enums/
-    ├── QuestionType.cs
-    ├── UserRole.cs
-    └── SessionStatus.cs
-
-CoreBackend.Infrastructure/
-├── Persistence/
-│   ├── DbConnectionFactory.cs
-│   ├── Repositories/
-│   │   ├── ProductRepository.cs
-│   │   ├── SettingsRepository.cs
-│   │   ├── NavigationRepository.cs
-│   │   ├── ThemeRepository.cs
-│   │   ├── FormSetRepository.cs
-│   │   ├── SessionRepository.cs
-│   │   ├── AnswerRepository.cs
-│   │   ├── SummaryRepository.cs
-│   │   └── UserRepository.cs
-│   └── Scripts/
-│       ├── 001_Products.sql
-│       ├── 002_Settings.sql
-│       ├── 003_Users.sql
-│       ├── 004_RefreshTokens.sql
-│       ├── 005_NavigationItems.sql
-│       ├── 006_NavigationTranslations.sql
-│       ├── 007_Themes.sql
-│       ├── 008_ThemeVariables.sql
-│       ├── 009_FormSets.sql
-│       ├── 010_Intros.sql
-│       ├── 011_IntroTranslations.sql
-│       ├── 012_Questions.sql
-│       ├── 013_QuestionTranslations.sql
-│       ├── 014_QuestionOptions.sql
-│       ├── 015_QuestionOptionTranslations.sql
-│       ├── 016_QuestionConditions.sql
-│       ├── 017_SummaryTemplates.sql
-│       ├── 018_Sessions.sql
-│       ├── 019_Answers.sql
-│       ├── 020_Summaries.sql
-│       ├── 021_AuditLogs.sql
-│       └── 099_Seed.sql
+├── Models/
+│   ├── Entities/
+│   │   ├── Product.cs
+│   │   ├── Setting.cs
+│   │   ├── NavigationItem.cs
+│   │   ├── Theme.cs
+│   │   ├── FormSet.cs
+│   │   ├── Intro.cs
+│   │   ├── Question.cs
+│   │   ├── Session.cs
+│   │   └── User.cs
+│   ├── Requests/
+│   └── Responses/
 ├── Services/
+│   ├── Interfaces/
+│   │   ├── IAuthService.cs
+│   │   ├── IJwtService.cs
+│   │   ├── IGoogleAuthService.cs
+│   │   ├── IAiSummaryService.cs
+│   │   ├── IVoiceTranscriptionService.cs
+│   │   ├── IFileStorageService.cs
+│   │   └── ISummaryFormatterService.cs
+│   ├── AuthService.cs
 │   ├── JwtService.cs
 │   ├── GoogleAuthService.cs
+│   ├── GroqAiSummaryService.cs
+│   ├── NullAiSummaryService.cs
 │   ├── LocalFileStorageService.cs
 │   └── SummaryFormatterService.cs
-└── AI/
-    ├── NullAiSummaryService.cs
-    └── GroqAiSummaryService.cs
+├── Repositories/
+│   ├── Interfaces/
+│   │   ├── IUserRepository.cs
+│   │   ├── IProductRepository.cs
+│   │   ├── ISettingsRepository.cs
+│   │   ├── INavigationRepository.cs
+│   │   ├── IThemeRepository.cs
+│   │   ├── IFormSetRepository.cs
+│   │   ├── ISessionRepository.cs
+│   │   ├── IAnswerRepository.cs
+│   │   └── ISummaryRepository.cs
+│   ├── DbConnectionFactory.cs
+│   ├── UserRepository.cs
+│   ├── ProductRepository.cs
+│   ├── SettingsRepository.cs
+│   ├── NavigationRepository.cs
+│   ├── ThemeRepository.cs
+│   ├── FormSetRepository.cs
+│   ├── SessionRepository.cs
+│   ├── AnswerRepository.cs
+│   └── SummaryRepository.cs
+├── Middleware/
+│   └── ExceptionMiddleware.cs
+├── Scripts/
+│   ├── 001_Products.sql
+│   ├── 002_Settings.sql
+│   ├── 003_Users.sql
+│   ├── 004_RefreshTokens.sql
+│   ├── 005_NavigationItems.sql
+│   ├── 006_NavigationTranslations.sql
+│   ├── 007_Themes.sql
+│   ├── 008_ThemeVariables.sql
+│   ├── 009_FormSets.sql
+│   ├── 010_Intros.sql
+│   ├── 011_IntroTranslations.sql
+│   ├── 012_Questions.sql
+│   ├── 013_QuestionTranslations.sql
+│   ├── 014_QuestionOptions.sql
+│   ├── 015_QuestionOptionTranslations.sql
+│   ├── 016_QuestionConditions.sql
+│   ├── 017_SummaryTemplates.sql
+│   ├── 018_Sessions.sql
+│   ├── 019_Answers.sql
+│   ├── 020_Summaries.sql
+│   ├── 021_AuditLogs.sql
+│   └── 099_Seed.sql
+├── appsettings.json
+└── Program.cs
 ```
 
 ---
@@ -992,43 +962,41 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 9.  First git commit — "chore: initial monorepo structure"
 ```
 
-### Phase 1 — CoreBackend
+### Phase 1 — CoreBackend (single project — Controller → Service → Repository)
 ```
-10. Domain entities — all C# entity classes with audit fields
-11. Contracts — all request/response DTOs
-12. IDbConnectionFactory interface + Dapper implementation
+10. Models/Entities — all C# entity classes with audit fields
+11. Models/Requests + Models/Responses — all DTOs
+12. DbConnectionFactory — IDbConnectionFactory interface + Dapper implementation
 13. All SQL table scripts (001–021) — run and verify in SQL Server
 14. Seed SQL script (099) — run and verify
-15. Settings repository + GetSettingQuery
-16. Products repository
-17. JwtService
-18. Auth — Guest token (CreateGuestCommand)
-19. Auth — Google OAuth (GoogleLoginCommand)
-20. Auth — Refresh token (RefreshTokenCommand)
+15. SettingsRepository (interface + class)
+16. ProductRepository (interface + class)
+17. JwtService (interface + class)
+18. Auth — UserRepository + Guest token flow
+19. Auth — Google OAuth (GoogleAuthService)
+20. Auth — Refresh token
 21. AuthController — all 4 endpoints
-22. Navigation repository + GetNavigationQuery + NavigationController
-23. Theme repository + GetThemeQuery + ThemesController
-24. FormSet repository + GetFormSetQuery + FormsController
-25. Session repository + CreateSessionCommand + SessionsController
+22. NavigationRepository + NavigationController
+23. ThemeRepository + ThemesController
+24. FormSetRepository + FormsController
+25. SessionRepository + SessionsController
 26. LocalFileStorageService + voice note upload endpoint
-27. Answer repository
+27. AnswerRepository
 28. SummaryFormatterService (rule-based, no AI)
 29. NullAiSummaryService
-30. GroqAiSummaryService
-31. Groq voice transcription service
-32. SubmitResponseCommand — full pipeline
-33. GetSummaryQuery + ResponsesController
-34. ConfigController
-35. ExceptionMiddleware
-36. DI wiring in Program.cs
-37. appsettings.json
+30. GroqAiSummaryService + voice transcription
+31. SubmitResponse — full pipeline (AuthService orchestrates)
+32. SummaryRepository + ResponsesController
+33. ConfigController
+34. ExceptionMiddleware
+35. DI wiring in Program.cs
     Test: All endpoints working via Scalar locally
 ```
 
 ### Phase 2 — PreDoc Frontend
 ```
 38. tailwind.config.ts with CSS variable mapping
-39. contracts.ts — TypeScript types matching CoreBackend.Contracts
+39. contracts.ts — TypeScript types matching CoreBackend Models/Responses
 40. api/client.ts — Axios + JWT interceptor + auto-refresh
 41. All api/*.ts files
 42. authStore.ts + sessionStore.ts (Zustand)
@@ -1150,3 +1118,11 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
   - lucide-react ^1.14.0
 - `dotnet new webapi` requires `--use-controllers` flag to get traditional controller-based project (not minimal API)
 - Phase 0 complete. Ready to start Phase 1 Step 10: Domain entities
+
+### 2026-05-11
+- ~~5-project Clean Architecture~~ → single project (updated 2026-05-11: developer preference — simpler Controller → Service → Repository pattern)
+- Removed: CoreBackend.Application, CoreBackend.Domain, CoreBackend.Infrastructure, CoreBackend.Contracts projects
+- Single project is CoreBackend.API — all packages consolidated there
+- Folder structure: Controllers/, Models/Entities/, Models/Requests/, Models/Responses/, Services/Interfaces/, Repositories/Interfaces/, Middleware/, Scripts/
+- No MediatR — direct service calls from controllers
+- Build Order Phase 1 rewritten to match new structure (steps 10–35)

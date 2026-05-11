@@ -22,7 +22,12 @@ This is a monorepo. Three solutions in one repo:
 
 ```
 TellCore/
-├── backend/CoreBackend/     ← ASP.NET Core Web API (.NET 10)
+├── backend/CoreBackend/src/CoreBackend.API/   ← Single ASP.NET Core project (.NET 10)
+│   ├── Controllers/
+│   ├── Models/
+│   ├── Services/
+│   ├── Repositories/
+│   └── Middleware/
 ├── apps/predoc/             ← Vite React (PreDoc app)
 ├── apps/theuntold/          ← Vite React (TheUntold app)
 └── docs/PROJECT_MEMORY.md   ← source of truth — read first always
@@ -119,14 +124,16 @@ If something changes, mark it as updated:
 
 ## Step 5 — Backend Rules (CoreBackend)
 
+- Single project: Controller → Service → Repository pattern.
 - No Entity Framework. No ORM. Dapper only.
 - All SQL written manually in the repository layer.
 - Every table has audit columns: Id, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, IsDeleted.
 - Never hard delete. Always soft delete (IsDeleted = 1).
 - AI keys go in Settings table only — never in appsettings.json.
 - Never return IsSecret = true settings to any frontend.
-- Controllers are thin — only call MediatR. No business logic in controllers.
-- Interfaces defined in Application layer. Implemented in Infrastructure layer.
+- Controllers are thin — call services only. No business logic in controllers.
+- Services define an interface (IXxxService) and a class (XxxService).
+- Repositories define an interface (IXxxRepository) and a class (XxxRepository).
 
 ---
 

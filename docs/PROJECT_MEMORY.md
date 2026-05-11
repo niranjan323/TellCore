@@ -985,7 +985,7 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 28. SummaryFormatterService (rule-based, no AI)
 ✅ 29. NullAiSummaryService
 ✅ 30. GroqAiSummaryService + voice transcription
-31. SubmitResponse — full pipeline (AuthService orchestrates)
+✅ 31. SubmitResponse — full pipeline (ResponseService orchestrates: answers → AI summary → rule-based fallback → persist)
 32. SummaryRepository + ResponsesController
 33. ConfigController
 34. ExceptionMiddleware

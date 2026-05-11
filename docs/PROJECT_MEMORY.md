@@ -977,7 +977,7 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 20. Auth — Refresh token (implemented in AuthService.RefreshAsync)
 ✅ 21. AuthController — all 4 endpoints
 ✅ 22. NavigationRepository + NavigationController
-23. ThemeRepository + ThemesController
+✅ 23. ThemeRepository + ThemesController
 24. FormSetRepository + FormsController
 25. SessionRepository + SessionsController
 26. LocalFileStorageService + voice note upload endpoint

@@ -966,7 +966,7 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ```
 ✅ 10. Models/Entities — all C# entity classes with audit fields
 ✅ 11. Models/Requests + Models/Responses — all DTOs
-12. DbConnectionFactory — IDbConnectionFactory interface + Dapper implementation
+✅ 12. DbConnectionFactory — IDbConnectionFactory interface + Dapper implementation
 13. All SQL table scripts (001–021) — run and verify in SQL Server
 14. Seed SQL script (099) — run and verify
 15. SettingsRepository (interface + class)

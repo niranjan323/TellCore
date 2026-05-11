@@ -968,7 +968,7 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 11. Models/Requests + Models/Responses — all DTOs
 ✅ 12. DbConnectionFactory — IDbConnectionFactory interface + Dapper implementation
 ✅ 13. All SQL table scripts (001–021) — written; run and verify in SQL Server when local instance available
-14. Seed SQL script (099) — run and verify
+✅ 14. Seed SQL script (099) — written with PreDoc + TheUntold seed; idempotent
 15. SettingsRepository (interface + class)
 16. ProductRepository (interface + class)
 17. JwtService (interface + class)

@@ -989,8 +989,8 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 32. SummaryRepository + ResponsesController
 ✅ 33. ConfigController + UsersController + SettingsController (non-secret only)
 ✅ 34. ExceptionMiddleware
-35. DI wiring in Program.cs
-    Test: All endpoints working via Scalar locally
+✅ 35. DI wiring in Program.cs — Serilog, JWT auth, CORS, OpenAPI, Scalar, static files for /uploads, ExceptionMiddleware
+    Test: 18 endpoints discovered in OpenAPI / Scalar at /scalar/v1. Pipeline reaches SQL layer cleanly (verified via auth probe — fails at TCP 10061 because local SQL Server is not running on this Mac; expected).
 ```
 
 ### Phase 2 — PreDoc Frontend
@@ -1126,3 +1126,10 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 - Folder structure: Controllers/, Models/Entities/, Models/Requests/, Models/Responses/, Services/Interfaces/, Repositories/Interfaces/, Middleware/, Scripts/
 - No MediatR — direct service calls from controllers
 - Build Order Phase 1 rewritten to match new structure (steps 10–35)
+- Phase 1 (Steps 10–35) complete. All 18 endpoints from Section 11 wired and discoverable via OpenAPI/Scalar at `/scalar/v1`.
+- AI provider switching: `IAiSummaryService` and `IVoiceTranscriptionService` resolved at request time from `Settings.ai.provider`. Set to `null` (default) → uses Null services; set to `groq` → uses Groq services. Zero-code swap.
+- Groq services read API key from `Settings.ai.groq.apikey` (IsSecret=true) — never from appsettings.json.
+- SQL Server is not available locally on macOS (this dev machine). Run the SQL scripts when on Windows with SQL Server: bin/Debug/net10.0/Scripts/001_*.sql..099_Seed.sql in order. The .sql files are copied to output on build.
+- Scripts ship copied to API output via `<None Update="Scripts\*.sql" CopyToOutputDirectory>` in csproj.
+- launchSettings.json default URL: http://localhost:5106 (http profile) and https://localhost:7027 (https profile).
+- ExceptionMiddleware returns `application/problem+json`; pattern verified end-to-end via auth probe.

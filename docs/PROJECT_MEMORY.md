@@ -981,7 +981,7 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 24. FormSetRepository + FormsController
 ✅ 25. SessionRepository + SessionsController
 ✅ 26. LocalFileStorageService + voice note upload endpoint
-27. AnswerRepository
+✅ 27. AnswerRepository
 28. SummaryFormatterService (rule-based, no AI)
 29. NullAiSummaryService
 30. GroqAiSummaryService + voice transcription

@@ -971,7 +971,7 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 ✅ 14. Seed SQL script (099) — written with PreDoc + TheUntold seed; idempotent
 ✅ 15. SettingsRepository (interface + class)
 ✅ 16. ProductRepository (interface + class)
-17. JwtService (interface + class)
+✅ 17. JwtService (interface + class)
 18. Auth — UserRepository + Guest token flow
 19. Auth — Google OAuth (GoogleAuthService)
 20. Auth — Refresh token

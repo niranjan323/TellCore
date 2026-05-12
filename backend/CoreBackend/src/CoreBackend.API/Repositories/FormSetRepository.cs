@@ -177,17 +177,19 @@ public class FormSetRepository : IFormSetRepository
     private static async Task<IntroResponse?> LoadIntroAsync(
         System.Data.IDbConnection conn, Guid formSetId, string languageCode, CancellationToken ct)
     {
+        // Column order must match IntroResponse constructor:
+        // (Id, Title, Subtitle, Body, AudioUrl, IconKey, PrimaryButtonLabel, PrimaryButtonRoute, VoiceNoteEnabled)
         const string sql = @"
             SELECT TOP 1
-                i.Id                  AS Id,
-                i.IconKey             AS IconKey,
-                i.PrimaryButtonRoute  AS PrimaryButtonRoute,
-                i.VoiceNoteEnabled    AS VoiceNoteEnabled,
+                i.Id                           AS Id,
                 COALESCE(it.Title, '')         AS Title,
                 it.Subtitle                    AS Subtitle,
                 it.Body                        AS Body,
                 it.AudioUrl                    AS AudioUrl,
-                it.PrimaryButtonLabel          AS PrimaryButtonLabel
+                i.IconKey                      AS IconKey,
+                it.PrimaryButtonLabel          AS PrimaryButtonLabel,
+                i.PrimaryButtonRoute           AS PrimaryButtonRoute,
+                i.VoiceNoteEnabled             AS VoiceNoteEnabled
             FROM dbo.Intros i
             OUTER APPLY (
                 SELECT TOP 1 Title, Subtitle, Body, AudioUrl, PrimaryButtonLabel

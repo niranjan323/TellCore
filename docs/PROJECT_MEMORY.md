@@ -995,30 +995,30 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 
 ### Phase 2 — PreDoc Frontend
 ```
-38. tailwind.config.ts with CSS variable mapping
-39. contracts.ts — TypeScript types matching CoreBackend Models/Responses
-40. api/client.ts — Axios + JWT interceptor + auto-refresh
-41. All api/*.ts files
-42. authStore.ts + sessionStore.ts (Zustand)
-43. injectTheme.ts
-44. useTheme hook
-45. useAppConfig hook
-46. useNavigation hook
-47. App.tsx — startup sequence + router
-48. AppShell + NavBar — renders from navigation API
-49. Guest auto-creation on first load
-50. AuthPage — Google OAuth
-51. IntroPage — intro text + audio player
-52. VoiceRecorder component
-53. ConditionEngine.ts
-54. All question type components
-55. QuestionRenderer.tsx
-56. QuestionsPage — full form flow + progress bar
-57. SummaryView component
-58. PdfExport component
-59. SummaryPage
-60. HistoryPage (registered users)
-    Test: Full end-to-end journey works locally
+✅ 38. tailwind.config.ts with CSS variable mapping
+✅ 39. contracts.ts — TypeScript types matching CoreBackend Models/Responses
+✅ 40. api/client.ts — Axios + JWT interceptor + auto-refresh
+✅ 41. All api/*.ts files (auth, config, themes, navigation, forms, sessions, responses, users)
+✅ 42. authStore.ts + sessionStore.ts (Zustand)
+✅ 43. injectTheme.ts
+✅ 44. useTheme hook
+✅ 45. useAppConfig hook
+✅ 46. useNavigation hook
+✅ 47. App.tsx — startup sequence + router (main.tsx provides QueryClient + BrowserRouter)
+✅ 48. AppShell + NavBar — renders from navigation API
+✅ 49. Guest auto-creation on first load (useGuestAuth)
+✅ 50. AuthPage — Google OAuth (GIS script in index.html)
+✅ 51. IntroPage — intro text + audio player + language selector
+✅ 52. VoiceRecorder component
+✅ 53. ConditionEngine.ts
+✅ 54. All question type components (textarea, textinput, chips, radio, checkbox, bodymap, slider, datepicker, infoblock)
+✅ 55. QuestionRenderer.tsx
+✅ 56. QuestionsPage — full form flow + progress bar
+✅ 57. SummaryView component
+✅ 58. PdfExport component (@react-pdf/renderer)
+✅ 59. SummaryPage (share via Web Share / clipboard, PDF gated by nav API)
+✅ 60. HistoryPage (registered users only, filtered client-side)
+    Test: `npm run build` succeeds clean; `npm run dev` serves /index.html (PreDoc title, GIS script, /src/main.tsx entry) on http://localhost:5180. Full end-to-end runtime journey still requires running SQL Server + CoreBackend API locally (developer to verify on Windows machine).
 ```
 
 ### Phase 3 — TheUntold Frontend
@@ -1133,3 +1133,22 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 - Scripts ship copied to API output via `<None Update="Scripts\*.sql" CopyToOutputDirectory>` in csproj.
 - launchSettings.json default URL: http://localhost:5106 (http profile) and https://localhost:7027 (https profile).
 - ExceptionMiddleware returns `application/problem+json`; pattern verified end-to-end via auth probe.
+
+### 2026-05-12
+- Phase 2 (Steps 38–60) complete. PreDoc frontend built per PREDOC_DESIGN.md; one bundled commit per developer preference.
+- Folder layout under `apps/predoc/src/`: `api/`, `components/{ui,layout,questions,summary,voice}/`, `hooks/`, `store/`, `theme/`, `types/`, `pages/`.
+- Theme system: CSS variables seeded in `index.css` as a baseline (`--primary` calm green #1d9e75 etc.) and overridden at runtime by `injectTheme()` once `GET /products/predoc/themes/active` responds — backend remains source of truth.
+- Tailwind v3 config maps `bg-primary`, `text-text-primary`, `rounded-md`, `border` (DEFAULT), `font-body`, etc. directly to `var(--*)`. No hardcoded colors in components.
+- Auth: `authStore` is persisted via Zustand `persist` (localStorage key `predoc.auth`); guest `deviceToken` is a UUID kept in `predoc.deviceToken`. `useGuestAuth` auto-creates a guest session on first load when no access token is present.
+- Axios client in `api/client.ts` injects `Authorization: Bearer ...` and runs a single-flight refresh on 401 via `/auth/refresh`; concurrent in-flight requests queue on the refresh promise. Refresh failure clears auth.
+- React Query is the only data-fetching layer; components never call axios directly. Hooks: `useTheme`, `useAppConfig`, `useNavigation`, `useDefaultFormSet`, `useGuestAuth`.
+- Routing in `App.tsx`: `/` IntroPage, `/voice` VoiceNotePage, `/questions` QuestionsPage (full-bleed, own progress bar), `/summary/:sessionId` SummaryPage, `/history` HistoryPage, `/auth` AuthPage. Splash is rendered while theme/config load.
+- Question registry in `QuestionRenderer.tsx` maps backend `question.type` → component for: textarea, textinput, chips, radio, checkbox, bodymap (front/back SVG with tappable regions), slider (1–10 with optional emoji indicators), datepicker, infoblock. `ConditionEngine.shouldShowQuestion` evaluates `in / not_in / equals / not_equals` conditions and supports array-valued answers.
+- PDF export uses `@react-pdf/renderer` with built-in Helvetica fonts so it works offline (avoids font-fetching). Triggered from SummaryPage only when navigation API returns an `export`/`pdf`/`paid` item — frontend never role-checks.
+- Share button uses `navigator.share` when available, falls back to clipboard.
+- Voice recorder uses `MediaRecorder` with `audio/webm` preferred, `audio/mp4` fallback for Safari; uploads via `POST /sessions/{id}/voice` as multipart.
+- Build verified: `npm install` (306 packages), `npm run build` clean. Dev server on `http://localhost:5180` returns the PreDoc index with title `PreDoc`, GIS script, and `/src/main.tsx` entry.
+- Phase 2 not runtime-tested end-to-end yet — local Mac has no SQL Server / CoreBackend running; developer to verify the full guest journey on Windows (Steps 56→submit→SummaryPage).
+- `.env.local` for predoc set to `VITE_API_BASE_URL=https://localhost:7027/api/v1` to match backend launchSettings HTTPS profile.
+- ESLint config not generated by the original Vite scaffold (`eslint .` errors with "couldn't find eslint.config.js"); not required for Phase 2 completion — left as a Phase 4 polish item.
+- TheUntold deliberately not started — waiting on developer confirmation per task instructions.

@@ -52,7 +52,9 @@ export function StoryOfTheDayPage() {
 
   return (
     <div className="relative min-h-dvh bg-surface">
-      <div className="relative h-56 overflow-hidden bg-gradient-to-br from-primary-light to-surface-secondary md:h-72">
+      <span className="read-progress" aria-hidden />
+      <div className="relative h-64 overflow-hidden bg-gradient-to-br from-primary-light to-surface-secondary md:h-80">
+        <div className="absolute inset-0 mesh-warm opacity-80" aria-hidden />
         <div className="absolute inset-0 bg-paper-grain opacity-80" aria-hidden />
       </div>
 

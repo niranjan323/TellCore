@@ -37,27 +37,36 @@ export function VoiceRecordingPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-surface">
-      <header className="flex items-center justify-between px-4 py-4 md:px-8">
+    <div className="relative min-h-dvh overflow-hidden bg-surface">
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+        <div className="absolute inset-0 mesh-warm opacity-90" />
+        <div className="absolute inset-0 bg-paper-grain opacity-70" />
+        <div className="absolute inset-0 bg-noise opacity-50 mix-blend-multiply" />
+      </div>
+
+      <header className="relative z-10 flex items-center justify-between px-4 py-4 md:px-10">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-sm font-medium text-text-secondary backdrop-blur transition-colors hover:bg-surface hover:text-text-primary"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
         </button>
-        <span className="font-handwritten text-base text-text-secondary">
+        <span className="inline-flex items-center gap-2 font-handwritten text-base text-text-secondary md:text-lg">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
           {prompt.dateLabel}
         </span>
       </header>
 
-      <VoiceRecorder
-        prompt={prompt.question}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        saving={saving}
-      />
+      <div className="relative animate-page">
+        <VoiceRecorder
+          prompt={prompt.question}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          saving={saving}
+        />
+      </div>
 
       {toast && <Toast message={toast} kind="success" onDismiss={() => setToast(null)} />}
     </div>

@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, PenLine } from 'lucide-react';
 import { StoryCard } from '../components/stories/StoryCard';
 import { StreakCounter } from '../components/profile/StreakCounter';
 import { Spinner } from '../components/ui/Spinner';
+import { WordReveal } from '../components/ui/WordReveal';
 import {
   fetchFeaturedStory,
   fetchMyStories,
@@ -12,6 +13,7 @@ import {
 } from '../api/stories.api';
 import { useAuthStore } from '../store/authStore';
 import { usePrompt } from '../hooks/usePrompt';
+import { useMagnetic } from '../hooks/useMagnetic';
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -38,40 +40,53 @@ export function DashboardPage() {
   });
 
   const firstName = email?.split('@')[0]?.replace(/[._-]/g, ' ').replace(/(^| )\w/g, (c) => c.toUpperCase()) ?? 'friend';
+  const magneticRef = useMagnetic<HTMLButtonElement>(0.15);
 
   return (
     <div className="animate-ink-fade space-y-10 md:space-y-12">
-      {/* Greeting */}
+      {/* Greeting — editorial header with handwritten date */}
       <section className="flex items-start justify-between gap-4">
         <div>
           <p className="font-handwritten text-xl text-text-secondary md:text-2xl">
             {prompt.dateLabel}
           </p>
-          <h1 className="mt-1 font-display text-[28px] font-semibold leading-tight tracking-tight text-text-primary md:text-[36px]">
-            {greeting()}, {firstName}.
+          <h1 className="mt-1 font-display text-[32px] font-semibold leading-[1.02] tracking-tight text-text-primary md:text-[44px]">
+            <WordReveal text={`${greeting()},`} as="span" className="block" />
+            <WordReveal
+              text={`${firstName}.`}
+              as="span"
+              className="block italic text-primary-dark"
+              delay={0.14}
+            />
           </h1>
         </div>
         {streak.data && <StreakCounter days={streak.data.currentDays} size="md" />}
       </section>
 
-      {/* Today's prompt */}
-      <section className="relative overflow-hidden rounded-lg border bg-primary-light p-6 md:p-8">
+      {/* Today's prompt — bento with mesh + paper grain depth */}
+      <section className="relative overflow-hidden rounded-[20px] border bg-primary-light p-6 md:p-9">
+        <div className="absolute inset-0 mesh-warm opacity-90" aria-hidden />
         <div className="absolute inset-0 bg-paper-grain opacity-70" aria-hidden />
         <div className="relative">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-dark">
+          <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-surface/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-dark backdrop-blur">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
             Today&apos;s prompt
           </p>
-          <p className="mt-3 font-display text-[22px] leading-snug text-text-primary md:text-[28px]">
-            {prompt.question}
+          <p className="mt-4 font-display text-[24px] leading-snug text-text-primary md:text-[32px] lg:text-[36px]">
+            <WordReveal text={prompt.question} as="span" />
           </p>
           {prompt.helper && (
-            <p className="mt-2 font-handwritten text-lg text-primary-dark">{prompt.helper}</p>
+            <p className="mt-3 font-handwritten text-lg text-primary-dark md:text-xl">
+              {prompt.helper}
+            </p>
           )}
           <button
+            ref={magneticRef}
             type="button"
             onClick={() => navigate('/today')}
-            className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-surface transition-colors hover:bg-primary-dark"
+            className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-surface shadow-[0_10px_24px_-12px_rgba(122,79,48,0.55)] transition-colors hover:bg-primary-dark"
           >
+            <PenLine className="h-4 w-4" aria-hidden />
             Tell this story
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>

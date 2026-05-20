@@ -4,6 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { Logo } from '../components/ui/Logo';
+import { MeshBackground } from '../components/ui/MeshBackground';
 import { authGoogle, authGuest } from '../api/auth.api';
 import { useAuthStore } from '../store/authStore';
 
@@ -73,28 +74,33 @@ export function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface-secondary px-4 py-10">
-      <div className="w-full max-w-intro animate-fade-in rounded-lg bg-surface p-6 shadow-sm md:p-10">
-        <div className="mb-8 flex flex-col items-center text-center">
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-surface px-4 py-10">
+      <MeshBackground variant="breath" />
+      <div className="glass-card animate-page relative w-full max-w-intro rounded-[24px] p-6 md:p-10">
+        <span
+          className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary-light animate-ring-breathe"
+          aria-hidden
+        />
+        <div className="relative mb-8 flex flex-col items-center text-center">
           <Logo size="lg" />
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight text-text-primary md:text-3xl">
-            Welcome to PreDoc
+          <h1 className="mt-6 text-2xl font-semibold leading-tight tracking-tight text-text-primary md:text-3xl">
+            Welcome back.
           </h1>
-          <p className="mt-2 text-sm text-text-secondary">
+          <p className="mt-2 font-medium text-text-secondary">
             You know something is wrong. We help you explain it.
           </p>
         </div>
 
         {error && (
-          <div className="mb-4">
+          <div className="relative mb-4">
             <ErrorMessage message={error} />
           </div>
         )}
 
-        <div className="flex flex-col gap-3">
+        <div className="relative flex flex-col gap-3">
           <Button
             label="Continue with Google"
-            variant="secondary"
+            variant="primary"
             loading={loadingGoogle}
             onClick={handleGoogle}
             fullWidth
@@ -108,8 +114,8 @@ export function AuthPage() {
           />
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-text-hint">
-          <ShieldCheck className="h-4 w-4" aria-hidden />
+        <div className="relative mt-8 flex items-center justify-center gap-2 text-xs text-text-hint">
+          <ShieldCheck className="h-4 w-4 text-primary" aria-hidden />
           <span>We never share your data.</span>
         </div>
       </div>

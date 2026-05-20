@@ -71,21 +71,31 @@ export function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center bg-surface px-4 py-10">
-      <div className="absolute inset-0 bg-paper-grain opacity-70" aria-hidden />
-      <div className="relative w-full max-w-sm animate-ink-fade rounded-lg border bg-surface p-8 shadow-md">
-        <div className="mb-8 flex flex-col items-center text-center">
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-surface px-4 py-10">
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+        <div className="absolute inset-0 mesh-warm opacity-90" />
+        <div className="absolute inset-0 bg-paper-grain opacity-80" />
+        <div className="absolute inset-0 bg-noise opacity-50 mix-blend-multiply" />
+      </div>
+
+      <div className="editorial-card animate-page relative w-full max-w-sm overflow-hidden rounded-[22px] p-8 shadow-md">
+        <span className="tape" style={{ top: -10, left: 36, transform: 'rotate(-6deg)' }} aria-hidden />
+
+        <div className="relative mb-8 flex flex-col items-center text-center">
           <Logo size="lg" />
           <h1 className="mt-6 font-display text-2xl font-semibold text-text-primary md:text-3xl">
             Welcome home.
           </h1>
           <p className="mt-2 font-handwritten text-lg text-text-secondary">
-            Your stories begin here.
+            <span className="handline">Your stories begin here.</span>
           </p>
         </div>
 
         {error && (
-          <p role="alert" className="mb-4 rounded-md bg-primary-light px-3 py-2 text-sm text-primary-dark">
+          <p
+            role="alert"
+            className="mb-4 rounded-md bg-primary-light px-3 py-2 text-sm text-primary-dark"
+          >
             {error}
           </p>
         )}
@@ -93,7 +103,7 @@ export function AuthPage() {
         <div className="flex flex-col gap-3">
           <Button
             label="Continue with Google"
-            variant="secondary"
+            variant="gold"
             loading={loadingGoogle}
             onClick={handleGoogle}
             fullWidth

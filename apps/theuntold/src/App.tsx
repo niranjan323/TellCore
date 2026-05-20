@@ -14,98 +14,160 @@ import { StoryDetailPage } from './pages/StoryDetailPage';
 import { StoryOfTheDayPage } from './pages/StoryOfTheDayPage';
 import { TodayPromptPage } from './pages/TodayPromptPage';
 import { VoiceRecordingPage } from './pages/VoiceRecordingPage';
+import { WelcomePage } from './pages/WelcomePage';
 import { WriteStoryPage } from './pages/WriteStoryPage';
 import { useTheme } from './hooks/useTheme';
 import { useAppConfig } from './hooks/useAppConfig';
-import { useGuestAuth } from './hooks/useGuestAuth';
 import { useAuthStore } from './store/authStore';
 
 function Shell({ children }: { children: ReactNode }) {
   return <AppShell>{children}</AppShell>;
 }
 
+function RequireAuth({ children }: { children: ReactNode }) {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  if (!accessToken) return <Navigate to="/welcome" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
-  useGuestAuth();
   const accessToken = useAuthStore((s) => s.accessToken);
   const onboardingDone = useAuthStore((s) => s.onboardingComplete);
   const theme = useTheme();
   const cfg = useAppConfig();
 
-  if (!accessToken || theme.isLoading || cfg.isLoading) {
+  // No token yet: show welcome (or legacy auth) — no auto-guest creation.
+  if (!accessToken) {
+    return (
+      <Routes>
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
+    );
+  }
+
+  if (theme.isLoading || cfg.isLoading) {
     return <SplashScreen />;
   }
 
+  // Logged-in but onboarding pending: only allow onboarding routes.
   if (!onboardingDone) {
     return (
       <Routes>
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="*" element={<OnboardingPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }
 
   return (
     <Routes>
+      <Route path="/welcome" element={<Navigate to="/" replace />} />
+      <Route path="/onboarding" element={<Navigate to="/" replace />} />
       <Route path="/auth" element={<AuthPage />} />
-      <Route path="/today" element={<TodayPromptPage />} />
-      <Route path="/today/voice" element={<VoiceRecordingPage />} />
-      <Route path="/today/write" element={<WriteStoryPage />} />
+
+      <Route
+        path="/today"
+        element={
+          <RequireAuth>
+            <TodayPromptPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/today/voice"
+        element={
+          <RequireAuth>
+            <VoiceRecordingPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/today/write"
+        element={
+          <RequireAuth>
+            <WriteStoryPage />
+          </RequireAuth>
+        }
+      />
 
       <Route
         path="/"
         element={
-          <Shell>
-            <DashboardPage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <DashboardPage />
+            </Shell>
+          </RequireAuth>
         }
       />
       <Route
         path="/stories"
         element={
-          <Shell>
-            <MyStoriesPage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <MyStoriesPage />
+            </Shell>
+          </RequireAuth>
         }
       />
       <Route
         path="/story/:storyId"
         element={
-          <Shell>
-            <StoryDetailPage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <StoryDetailPage />
+            </Shell>
+          </RequireAuth>
         }
       />
       <Route
         path="/featured"
         element={
-          <Shell>
-            <FeaturedFeedPage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <FeaturedFeedPage />
+            </Shell>
+          </RequireAuth>
         }
       />
-      <Route path="/featured/:storyId" element={<StoryOfTheDayPage />} />
+      <Route
+        path="/featured/:storyId"
+        element={
+          <RequireAuth>
+            <StoryOfTheDayPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/profile"
         element={
-          <Shell>
-            <ProfilePage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <ProfilePage />
+            </Shell>
+          </RequireAuth>
         }
       />
       <Route
         path="/vault"
         element={
-          <Shell>
-            <FamilyVaultPage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <FamilyVaultPage />
+            </Shell>
+          </RequireAuth>
         }
       />
       <Route
         path="/notifications"
         element={
-          <Shell>
-            <NotificationsPage />
-          </Shell>
+          <RequireAuth>
+            <Shell>
+              <NotificationsPage />
+            </Shell>
+          </RequireAuth>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

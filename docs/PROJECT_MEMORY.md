@@ -1175,3 +1175,83 @@ Do not start Phase 2 until Phase 1 works end-to-end locally.
 - PDF export is NOT included for TheUntold (per design — stories aren't doctor handouts). Share uses Web Share API with clipboard fallback.
 - Vite dev server pinned to port 5174 (matches backend CORS allowlist alongside PreDoc on 5173). Build size: 386 kB JS / 22 kB CSS — no @react-pdf/renderer bundled.
 - Seed script `100_TheUntold_Seed.sql` runs AFTER `099_Seed.sql`. It explicitly UPDATEs `Themes` (sets warm-sepia inactive/non-default, warm-paper active/default) and soft-deletes the placeholder `home`/`history` nav rows before inserting the full TheUntold nav. Idempotent on re-run. Verify on Windows when SQL Server is available.
+
+### 2026-05-16 — Redesign branch `redesign/welcome-and-motion-v2`
+- New Git branch off master with both apps' initial frontends committed. Work is unmerged; developer to review and merge.
+- **Removed auto-guest-on-first-load** for both apps. Previously `useGuestAuth` auto-created a guest token; now both `App.tsx` files render a Welcome route while `accessToken` is null, and only an explicit user click creates the session.
+- **PreDoc** new entry route is `/welcome`; the main flow starts at `/start` (was `/`). `/` and unknown routes redirect to `/start` once authenticated.
+- **TheUntold** keeps `/` as the dashboard but gates it behind Welcome → (optional) Onboarding. Onboarding still uses `authStore.onboardingComplete`; the App.tsx now strictly routes-to-onboarding when that flag is false instead of returning bare components.
+- Added shared motion vocabulary in each app (kept in `src/index.css`):
+  - `@keyframes word-rise` + `.animate-word-rise` — words slide up from under a clip mask. Component: `WordReveal` renders any string as per-word reveal with stagger + initial delay.
+  - `mesh-aurora` / `mesh-breath` (PreDoc) and `mesh-warm` (TheUntold) — multi-radial gradients that drift slowly via `mesh-drift` keyframe; blurred and saturated. Component: `MeshBackground` for PreDoc.
+  - `glass-card` (PreDoc) and `editorial-card` (TheUntold) — frosted panels with backdrop-filter, soft elevation, and tinted shadow. Used for the welcome auth cards and the IntroPage CTA card.
+  - `animate-ring-breathe` / `animate-candle-flicker` / `animate-ink-bleed` / `hand-draw` — subtle health/editorial motifs.
+  - `.bg-noise` — inline SVG turbulence overlay for paper grain; ~6% opacity.
+  - `btn-shimmer` — pseudo-element shimmer pass over primary CTAs.
+- `useMagnetic<T>(strength)` hook (both apps) — cursor-follow translate on desktop only. Disabled when `(pointer: coarse)` OR `prefers-reduced-motion: reduce` matches. Used on the primary auth CTA and the dashboard "Tell this story" button.
+- **PreDoc WelcomePage** — two-column hero on md+; left side is editorial typography with three `WordReveal` lines ("You know" / "something is wrong." / "We help you explain it." in primary-dark), right side is a `glass-card` with breathing ring corner accent, Google CTA + guest CTA. Trust strip at footer in uppercase letter-spaced caps. Single-source `declare global Window.google` lives in `AuthPage.tsx` only — WelcomePage relies on the merged ambient type.
+- **TheUntold WelcomePage** — magazine cover. Huge `font-display` headline with italic middle line ("Every life / has a story / worth keeping."). Rotating editorial quote (6.5 s interval) pulled from `storyFixtures` — `featuredStory` + first 3 `recentStoriesFixtures`. `editorial-card` paper auth panel with gold-accent primary "Continue with Google" + ghost "Continue as guest", a rotated "Daily Page" stamp top-right, and an SVG hand-drawn underline that strokes in on mount.
+- **PreDoc IntroPage** modernised — wrapped in `MeshBackground variant="breath"`, glass card panel with breathing-ring corner, title rendered via `WordReveal`, primary CTA gets an `ArrowRight` trailing icon. Existing language selector, voice-note button, and trust strip kept.
+- **TheUntold DashboardPage** hero — greeting becomes a two-line `WordReveal` ("{greeting}," then italic `{firstName}.` in primary-dark), today's prompt card now layers `mesh-warm` + paper grain for depth, prompt question itself uses `WordReveal`, primary CTA is magnetic with pen icon + arrow.
+- Build verified: PreDoc `1795 kB JS / 19 kB CSS`, TheUntold `397 kB JS / 27 kB CSS`. Dev servers serve correct titles + theme-color metas on ports 5180 (PreDoc) and 5184 (TheUntold).
+- Scope intentionally limited this session: only Welcome screens + two hero screens redesigned. Other 20+ screens still use the prior look; can be iterated next session once developer shares motionsites.ai-style sample references they mentioned.
+- No new dependencies added — all motion is pure CSS keyframes + tiny vanilla hooks. CLAUDE.md package gate respected.
+
+### 2026-05-16 (later) — Full redesign pass across every screen
+Same branch `redesign/welcome-and-motion-v2`. Research-driven sweep based on 2026 web design trends:
+- Healthcare UX: calm whitespace, gentle micro-interactions as *communication* not decoration (per Eleken / FuselabCreative / Excellent Web World 2026 trend pieces).
+- Editorial/memoir aesthetic: tactile rebellion, paper grain, postal ephemera, drop-cap serifs (Creative Bloq / Fontfabric / Letterhend 2026 typography reports).
+- Motion patterns: CSS `animation-timeline: view()` and `animation-timeline: scroll(root)` are universal in 2026; replace JS scroll observers (per Codrops / DEV community 2026 articles).
+
+**New shared motion vocabulary (added to both apps' index.css):**
+- `@keyframes rise-in`, `slide-in-left`, `scale-in` + matching `.reveal`, `.reveal-left`, `.reveal-scale` classes wrapped in `@supports (animation-timeline: view())` with a one-shot mount fallback for older browsers.
+- `[data-stagger] > *` selector uses CSS custom property `--i` to stagger child animations.
+- `.lift` hover that translates up and adds a tinted shadow on desktop only.
+- `.grad-border` — masked gradient border using `mask-composite: exclude`.
+- `.animate-tick`, `.animate-caret`, `.animate-page` (page transition with blur).
+- `.dot-pulse` (PreDoc) for active-state dots.
+
+**Shared components added:**
+- `ScrollReveal` (both apps) — wraps any element with the CSS reveal classes; accepts `variant`, `index`, `delay`.
+- `StatCounter` (both apps) — rAF-driven number tick from 0 → value with easeOutCubic.
+- `PaperEphemera.tsx` (TheUntold only) — `Tape`, `Stamp`, `Postmark` SVG components for the editorial diary aesthetic.
+
+**TheUntold-specific additions:**
+- `.tape`, `.stamp`, `.postcard`, `.handline` (squiggly hand-drawn underline SVG used inline on key headlines) tactile primitives.
+- `.read-progress` — fixed top bar driven by `animation-timeline: scroll(root)` for story reading progress. Used on StoryDetailPage + StoryOfTheDayPage.
+
+**PreDoc — every screen redesigned:**
+- AuthPage: now wrapped in `MeshBackground variant="breath"`, glass card with breathing-ring corner, primary "Continue with Google" CTA, harmonized with Welcome.
+- QuestionsPage: full-bleed mesh background, circular SVG progress ring + step counter in a pill at top, glass card around each question, `animate-page` transition between questions.
+- SummaryPage + SummaryView: complete rewrite to feel like a medical letter — gradient letterhead band at top, monospace tracking-wider section numbers, SVG noise overlay for paper texture, sections scroll-reveal staggered, signature footer.
+- HistoryPage: timeline list with left vertical rail and ringed dots per entry, lift-on-hover entries, gradient border, scroll-reveal staggered.
+- VoiceNotePage: now wrapped in mesh + glass card, with kicker "Step 1 of 2 · Voice" and editorial headline above the recorder.
+
+**TheUntold — every screen redesigned:**
+- SplashScreen: warm mesh + paper grain + noise, animated flame on the feather, ink-bleed-in for the wordmark, three loader dots tick-cycling at the bottom.
+- OnboardingPage: per-step `animate-ink-bleed`, decorative concentric/dashed circles around each illustration, "Chapter NN" handwritten kicker, `handline` underline on headlines.
+- AuthPage: editorial-card with washi tape strip at top, gold variant primary CTA, handline-underlined handwritten tagline.
+- TodayPromptPage: dramatic full-bleed mesh + paper, prompt as word-revealed huge serif, Postmark SVG component below header, two postcard choice cards with stamps ("Voice" / "Pen") and magnetic hover.
+- VoiceRecordingPage: mesh background + ambient paper grain wrapping the existing warm-pulse recorder.
+- WriteStoryPage: ruled-notebook background (repeating linear-gradient stripes at 36px), pill-shaped saved indicator, sticky footer with handwritten encouragement.
+- MyStoriesPage: editorial header with handwritten kicker + `StatCounter` for total stories, `grad-border` search pill, scroll-reveal staggered list/grid, lift-on-hover cards.
+- StoryDetailPage: top `read-progress` scroll-driven bar added (animates from 0% to 100% as the user scrolls).
+- FeaturedFeedPage: handwritten kicker "On the community page", postcard empty-state, hero scale-reveal, staggered editorial grid.
+- StoryOfTheDayPage: hero bar now layers `mesh-warm` + paper grain, `read-progress` bar added.
+- ProfilePage: avatar lives inside a `postcard` with `Tape` strip across the top and a `Postmark` SVG in the corner; stats reveal with stagger; milestones become a left-rail timeline like PreDoc's history.
+- FamilyVaultPage: postcard header with "Vault" stamp, time-capsule items get "Locked" stamps + warm-glow shield, member rows lift on hover.
+- NotificationsPage: editorial header with unread count, staggered reveal, postcard empty state.
+
+**Build verification:**
+- PreDoc: 24.80 kB CSS / 1800 kB JS (gzip 596 kB). The big JS is `@react-pdf/renderer`; rest of motion is CSS.
+- TheUntold: 32.54 kB CSS / 407.58 kB JS (gzip 124.86 kB).
+- No new npm packages. CLAUDE.md package gate respected.
+- All motion respects `prefers-reduced-motion: reduce` via a global `*` override at the bottom of each app's index.css.
+
+**Browser support:** Scroll-driven animations (`animation-timeline: view()` / `scroll()`) are universal in 2026 evergreen browsers per the W3C Scroll-Driven Animations spec. The `@supports` guards still ship a graceful one-shot fallback for older versions.
+
+**Still pending — for next session if developer wants:**
+- Page-transition orchestration between routes (currently `animate-page` is per-page mount only, not a true link-driven transition).
+- View Transitions API for browsers that support it.
+- Code splitting / lazy routes to address the >500 kB PreDoc JS warning (driven by @react-pdf/renderer being eagerly imported in SummaryPage).
+- Hand-illustrated SVG decorations beyond the current generic icons.

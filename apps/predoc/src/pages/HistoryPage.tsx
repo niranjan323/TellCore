@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, ClipboardList } from 'lucide-react';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
+import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { Spinner } from '../components/ui/Spinner';
 import { getMySessions } from '../api/users.api';
 import { useAuthStore } from '../store/authStore';
@@ -82,22 +83,28 @@ export function HistoryPage() {
 
   return (
     <div className="animate-fade-in">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight text-text-primary md:text-3xl">
+      <header className="mb-6 animate-page">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-primary-dark">
+          Your timeline
+        </p>
+        <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-tight text-text-primary md:text-[40px]">
           My visits
         </h1>
+        <p className="mt-1 text-sm text-text-secondary md:text-base">
+          A record of every conversation you&apos;ve prepared for.
+        </p>
       </header>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap gap-1.5">
         {FILTERS.map((f) => (
           <button
             key={f.key}
             type="button"
             onClick={() => setFilter(f.key)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`relative rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
               filter === f.key
-                ? 'bg-primary text-surface'
-                : 'bg-surface text-text-secondary hover:bg-surface-secondary'
+                ? 'bg-primary text-surface shadow-[0_8px_18px_-10px_rgba(15,110,86,0.55)]'
+                : 'border border-border bg-surface text-text-secondary hover:bg-surface-secondary'
             }`}
           >
             {f.label}
@@ -106,9 +113,9 @@ export function HistoryPage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-lg bg-surface p-10 text-center shadow-sm">
+        <div className="glass-card rounded-[20px] p-12 text-center">
           <ClipboardList className="mx-auto h-12 w-12 text-text-hint" aria-hidden />
-          <h2 className="mt-4 text-lg font-semibold text-text-primary">
+          <h2 className="mt-4 font-display text-xl font-semibold text-text-primary">
             Nothing here yet
           </h2>
           <p className="mt-1.5 text-sm text-text-secondary">
@@ -116,27 +123,41 @@ export function HistoryPage() {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <li key={item.sessionId}>
+        <ol className="relative ml-3 border-l border-border pl-7" data-stagger>
+          {items.map((item, idx) => (
+            <ScrollReveal
+              as="li"
+              key={item.sessionId}
+              variant="rise"
+              index={idx}
+              className="relative mb-4 last:mb-0"
+            >
+              {/* Timeline dot */}
+              <span
+                className="absolute -left-[34px] top-5 inline-block h-3 w-3 rounded-full bg-primary ring-4 ring-surface"
+                aria-hidden
+              />
               <button
                 type="button"
                 onClick={() => navigate(`/summary/${item.sessionId}`)}
-                className="flex w-full items-center gap-4 rounded-md border bg-surface p-4 text-left hover:bg-surface-secondary"
+                className="lift grad-border flex w-full items-center gap-4 rounded-[16px] bg-surface p-4 text-left md:p-5"
               >
                 <div className="flex-1">
-                  <div className="text-xs font-medium uppercase tracking-wider text-text-hint">
+                  <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-dark">
                     {formatDate(item.createdAt)}
                   </div>
-                  <div className="mt-1 line-clamp-1 text-[15px] font-medium text-text-primary">
+                  <div className="mt-1 line-clamp-1 font-display text-lg font-semibold text-text-primary md:text-xl">
                     {item.title ?? 'Untitled visit'}
                   </div>
+                  <div className="mt-1 text-xs text-text-secondary">
+                    {item.status} · {item.languageCode.toUpperCase()}
+                  </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-text-hint" aria-hidden />
+                <ChevronRight className="h-5 w-5 text-primary transition-transform group-hover:translate-x-1" aria-hidden />
               </button>
-            </li>
+            </ScrollReveal>
           ))}
-        </ul>
+        </ol>
       )}
     </div>
   );

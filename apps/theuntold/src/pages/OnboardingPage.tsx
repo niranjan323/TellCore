@@ -50,26 +50,47 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface">
-      <header className="flex items-center justify-between px-5 py-4">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-surface">
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+        <div className="absolute inset-0 mesh-warm opacity-90" />
+        <div className="absolute inset-0 bg-paper-grain opacity-70" />
+        <div className="absolute inset-0 bg-noise opacity-50 mix-blend-multiply" />
+      </div>
+
+      <header className="relative z-10 flex items-center justify-between px-5 py-5 md:px-10">
         <Logo size="sm" />
+        <span className="hidden font-handwritten text-base text-text-secondary md:inline">
+          Page {step + 1} of {STEPS.length}
+        </span>
         <button
           type="button"
           onClick={skip}
-          className="text-sm font-medium text-text-secondary hover:text-text-primary"
+          className="text-sm font-medium text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
         >
           Skip
         </button>
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 pb-12 text-center">
-        <div className="mb-10 flex h-40 w-40 items-center justify-center rounded-full bg-primary-light text-primary-dark md:h-48 md:w-48">
-          <Icon className="h-16 w-16 md:h-20 md:w-20" strokeWidth={1.4} aria-hidden />
+      <main
+        key={step}
+        className="animate-ink-bleed relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 pb-12 text-center"
+      >
+        <div className="relative mb-10 flex h-44 w-44 items-center justify-center rounded-full bg-primary-light text-primary-dark md:h-56 md:w-56">
+          <span className="absolute inset-0 rounded-full border border-primary-dark/20" />
+          <span className="absolute inset-3 rounded-full border border-dashed border-primary-dark/30" />
+          <Icon
+            className="h-16 w-16 animate-flame md:h-20 md:w-20"
+            strokeWidth={1.3}
+            aria-hidden
+          />
         </div>
-        <h1 className="font-display text-[28px] font-semibold leading-tight text-text-primary md:text-[34px]">
-          {STEPS[step].headline}
+        <p className="font-handwritten text-xl text-primary-dark md:text-2xl">
+          Chapter {String(step + 1).padStart(2, '0')}
+        </p>
+        <h1 className="mt-2 font-display text-[34px] font-semibold leading-[1.05] tracking-tight text-text-primary md:text-[48px]">
+          <span className="handline">{STEPS[step].headline}</span>
         </h1>
-        <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-text-secondary md:text-base">
+        <p className="mt-6 max-w-md text-[15px] leading-relaxed text-text-secondary md:text-[17px]">
           {STEPS[step].body}
         </p>
       </main>

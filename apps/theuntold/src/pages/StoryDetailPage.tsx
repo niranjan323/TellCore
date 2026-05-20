@@ -58,6 +58,7 @@ export function StoryDetailPage() {
 
   return (
     <div className="relative">
+      <span className="read-progress" aria-hidden />
       <header className="mb-6 flex items-center justify-between">
         <button
           type="button"

@@ -1255,3 +1255,22 @@ Same branch `redesign/welcome-and-motion-v2`. Research-driven sweep based on 202
 - View Transitions API for browsers that support it.
 - Code splitting / lazy routes to address the >500 kB PreDoc JS warning (driven by @react-pdf/renderer being eagerly imported in SummaryPage).
 - Hand-illustrated SVG decorations beyond the current generic icons.
+
+### 2026-08-31 — TheUntold v1 sprint kickoff (branch `feature/untold-v1`)
+Developer returned after ~3.5 months. Focus: **TheUntold first**, 3-day sprint to a demo-able global MVP.
+Detailed sprint plan lives in **`docs/PLAN.md`** (new living document — read it alongside this file; checkboxes there track sprint progress). Decisions confirmed by developer:
+
+- **Reuse existing work** — no rebuild. Backend Phase 1 + TheUntold frontend (Phase 3 + redesign) are the base.
+- **New branch per sprint**: `feature/untold-v1` created off `redesign/welcome-and-motion-v2`; merge to `master` when sprint completes.
+- **Mobile apps via Capacitor** (NOT Blazor Hybrid) wrapping the existing Vite React app. App id `com.tellcore.theuntold`. Capacitor packages approved.
+- **Payments: Stripe, global** (not Razorpay — audience is worldwide). Test mode for demo. `Stripe.net` NuGet package approved (webhook signature verification). Apple IAP compliance deferred until iOS App Store release.
+- **Paid model: premium membership** — free users write stories + read ~600-char previews of public stories; paid unlocks full public stories, multilingual AI, audio playback, family vault, unlimited stories. Gating stays 100% backend-driven (navigation + preview logic).
+- **AI moderation is mandatory** before any story goes public — pipeline flags unsafe content/PII; flagged stories stay private with reason shown to author.
+- **Family vault invites via secure share links** (token URL, 7-day expiry) — no email service in MVP.
+- **Languages: English UI + any-language story input** — AI transcribes, keeps original language, translates to English. Full UI i18n post-MVP.
+- **SQL Server 2022 → 2025** (Docker `mssql/server:2025-latest`): local SQL Server now runs in Docker ON THIS MAC (port 1433 confirmed open — supersedes 2026-05-11 note that SQL Server was unavailable on macOS). 2025 gives native `VECTOR(n)` + `VECTOR_DISTANCE` for semantic search; Azure SQL free tier (planned prod DB) supports the same, so search SQL is portable. Local DB will be dropped + recreated fresh: scripts 001–021, 099, 100, then new 101–113 (Stories, StoryTranslations, StoryTags, StoryEmbeddings, StoryViews, Streaks, FamilyMembers, VaultInvites, Notifications, Subscriptions, PaymentEvents, FeaturedStories, Users alter).
+- **New Python AI service** at `services/ai/` — FastAPI + LangGraph, internal-only (called by .NET with shared secret header; frontends never call it). Pipeline: transcribe (Groq Whisper) → detect language → clean → moderate → translate(en) → tag → embed (`intfloat/multilingual-e5-small`, 384-dim, local CPU model — free, offline, multilingual). Documented deviation: the "AI keys in Settings table" rule governs .NET; the Python service reads its Groq key from env vars (standard per-service secret ownership).
+- **Voice/media storage rule**: raw audio files go to file storage (local `uploads/` now → Cloudflare R2 free tier when hosted), NEVER into SQL. Transcript/translation/embedding rows go to SQL.
+- **Hosting (demo, free tier)**: web → Cloudflare Pages/Vercel; CoreBackend → Azure App Service F1 or Render (container); AI service → Hugging Face Space; DB → Azure SQL free tier; audio → R2. CI via GitHub Actions with monorepo path filters. Azure-leaning because developer plans Azure/AWS after traction.
+- **Scale posture**: developer aspires to very large scale eventually ("10 crore users"). Agreed approach: do NOT build for that now; keep scale-unblocking habits (stateless JWT API, media in object storage, async AI with status polling, cache-friendly GETs, rate limiting + security headers from day one). Redis/queue/CDN/partitioning are post-traction backlog.
+- Toolchain verified on this Mac: .NET SDK 10.0.203, Node v24.14.1, system Python 3.9.6 (AI service will use Python 3.12 via `uv`).

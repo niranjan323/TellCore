@@ -34,6 +34,24 @@ public class BillingController : AuthorizedControllerBase
         return error is null ? Ok(result) : ErrorResult(error);
     }
 
+    [HttpPost("portal-session")]
+    [Authorize]
+    public async Task<ActionResult<CheckoutSessionResponse>> CreatePortalSession(
+        [FromBody] CreatePortalSessionRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var (result, error) = await _billing.CreatePortalSessionAsync(GetUserId(), request.ReturnUrl, ct);
+            return error is null ? Ok(result) : ErrorResult(error);
+        }
+        catch (StripeException ex)
+        {
+            // Test-mode portal needs a saved configuration in the Stripe dashboard.
+            _logger.LogWarning(ex, "Stripe portal session failed");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "portal_unavailable" });
+        }
+    }
+
     [HttpGet("status")]
     [Authorize]
     public async Task<ActionResult<BillingStatusResponse>> GetStatus(CancellationToken ct)

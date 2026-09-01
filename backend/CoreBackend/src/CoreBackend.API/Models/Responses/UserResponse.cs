@@ -5,4 +5,5 @@ public record UserResponse(
     string UserType,
     string? Email,
     string? Name,
-    string? PreferredLanguage);
+    string? PreferredLanguage,
+    bool IsProfilePublic);

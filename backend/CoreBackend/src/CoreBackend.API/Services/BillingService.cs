@@ -198,6 +198,25 @@ public class BillingService : IBillingService
         }
     }
 
+    public async Task<(CheckoutSessionResponse? Result, string? Error)> CreatePortalSessionAsync(Guid userId, string returnUrl, CancellationToken ct = default)
+    {
+        var secretKey = await GetConfiguredValueAsync("payments.stripe.secretkey", ct);
+        if (secretKey is null) return (null, "billing_not_configured");
+        if (string.IsNullOrWhiteSpace(returnUrl)) return (null, "invalid_urls");
+
+        var sub = await _billing.GetLatestForUserAsync(userId, ct);
+        if (sub is null || string.IsNullOrEmpty(sub.StripeCustomerId)) return (null, "not_found");
+
+        var client = new StripeClient(secretKey);
+        var portal = await new Stripe.BillingPortal.SessionService(client).CreateAsync(
+            new Stripe.BillingPortal.SessionCreateOptions
+            {
+                Customer = sub.StripeCustomerId,
+                ReturnUrl = returnUrl,
+            }, cancellationToken: ct);
+        return (new CheckoutSessionResponse(portal.Url), null);
+    }
+
     public async Task<BillingStatusResponse?> GetStatusAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await _users.GetByIdAsync(userId, ct);

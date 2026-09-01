@@ -11,6 +11,8 @@ public interface IUserRepository
     Task InsertAsync(User user, CancellationToken ct = default);
     Task UpdateLastLoginAsync(Guid userId, CancellationToken ct = default);
     Task UpdateProfileAsync(User user, CancellationToken ct = default);
+    Task SetUserTypeAsync(Guid userId, string userType, DateTime? subscriptionExpiresAt, CancellationToken ct = default);
+    Task SetProfileVisibilityAsync(Guid userId, bool isProfilePublic, CancellationToken ct = default);
     Task SoftDeleteAsync(Guid userId, CancellationToken ct = default);
 
     Task InsertRefreshTokenAsync(RefreshToken token, CancellationToken ct = default);

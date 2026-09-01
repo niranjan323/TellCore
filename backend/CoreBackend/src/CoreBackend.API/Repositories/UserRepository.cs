@@ -13,7 +13,7 @@ public class UserRepository : IUserRepository
     private const string UserColumns = @"
         Id, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, IsDeleted,
         UserType, Email, Name, GoogleId, DeviceToken, PreferredLanguage,
-        SubscriptionExpiresAt, LastLoginAt";
+        SubscriptionExpiresAt, LastLoginAt, IsProfilePublic";
 
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -85,6 +85,29 @@ public class UserRepository : IUserRepository
             WHERE Id = @Id AND IsDeleted = 0";
         using var conn = _factory.CreateConnection();
         await conn.ExecuteAsync(new CommandDefinition(sql, user, cancellationToken: ct));
+    }
+
+    public async Task SetUserTypeAsync(Guid userId, string userType, DateTime? subscriptionExpiresAt, CancellationToken ct = default)
+    {
+        const string sql = @"
+            UPDATE dbo.Users
+            SET UserType = @UserType, SubscriptionExpiresAt = @SubscriptionExpiresAt,
+                UpdatedAt = SYSUTCDATETIME(), UpdatedBy = @Id
+            WHERE Id = @Id AND IsDeleted = 0";
+        using var conn = _factory.CreateConnection();
+        await conn.ExecuteAsync(new CommandDefinition(sql,
+            new { Id = userId, UserType = userType, SubscriptionExpiresAt = subscriptionExpiresAt }, cancellationToken: ct));
+    }
+
+    public async Task SetProfileVisibilityAsync(Guid userId, bool isProfilePublic, CancellationToken ct = default)
+    {
+        const string sql = @"
+            UPDATE dbo.Users
+            SET IsProfilePublic = @IsProfilePublic, UpdatedAt = SYSUTCDATETIME(), UpdatedBy = @Id
+            WHERE Id = @Id AND IsDeleted = 0";
+        using var conn = _factory.CreateConnection();
+        await conn.ExecuteAsync(new CommandDefinition(sql,
+            new { Id = userId, IsProfilePublic = isProfilePublic }, cancellationToken: ct));
     }
 
     public async Task SoftDeleteAsync(Guid userId, CancellationToken ct = default)

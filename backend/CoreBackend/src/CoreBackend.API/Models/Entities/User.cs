@@ -10,4 +10,5 @@ public class User : BaseEntity
     public string? PreferredLanguage { get; set; }
     public DateTime? SubscriptionExpiresAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public bool IsProfilePublic { get; set; } = true;
 }

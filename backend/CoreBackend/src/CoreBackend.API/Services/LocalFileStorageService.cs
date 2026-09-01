@@ -40,6 +40,15 @@ public class LocalFileStorageService : IFileStorageService
         return new StoredFile(relative, url);
     }
 
+    public Task<Stream?> OpenReadAsync(string relativePath, CancellationToken ct = default)
+    {
+        var safeRelative = string.Concat(relativePath.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == '/' || c == '.'));
+        var absolutePath = Path.GetFullPath(Path.Combine(_root, safeRelative));
+        if (!absolutePath.StartsWith(Path.GetFullPath(_root), StringComparison.Ordinal) || !File.Exists(absolutePath))
+            return Task.FromResult<Stream?>(null);
+        return Task.FromResult<Stream?>(new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read));
+    }
+
     private string BuildPublicUrl(string relativePath)
     {
         var req = _http.HttpContext?.Request;

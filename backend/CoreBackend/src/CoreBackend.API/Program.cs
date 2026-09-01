@@ -77,6 +77,11 @@ builder.Services.AddScoped<IFormSetRepository, FormSetRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddScoped<IAnswerRepository, AnswerRepository>();
 builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
+builder.Services.AddScoped<IStoryRepository, StoryRepository>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IFamilyRepository, FamilyRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IBillingRepository, BillingRepository>();
 
 // ── Services ────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<IJwtService, JwtService>();
@@ -86,6 +91,32 @@ builder.Services.AddSingleton<ISummaryFormatterService, SummaryFormatterService>
 builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
 builder.Services.AddHttpClient<IGoogleAuthService, GoogleAuthService>();
+
+// ── TheUntold: stories, profile, vault, notifications, billing ──────────────
+builder.Services.AddScoped<IStoryService, StoryService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IVaultService, VaultService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IBillingService, BillingService>();
+builder.Services.AddScoped<IStoryProcessingService, StoryProcessingService>();
+builder.Services.AddHttpClient<IAiPipelineClient, AiPipelineClient>();
+builder.Services.AddSingleton<IStoryProcessingQueue, StoryProcessingQueue>();
+builder.Services.AddHostedService<StoryProcessingWorker>();
+
+// ── Rate limiting (per client IP; global fixed window) ───────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 300,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
 
 // ── AI provider selection via Settings.ai.provider (resolved at request time)
 builder.Services.AddHttpClient<GroqAiSummaryService>();
@@ -113,6 +144,15 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionMiddleware>();
 
+// Baseline security headers on every response.
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -137,6 +177,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseCors("default");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

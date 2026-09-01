@@ -1,7 +1,45 @@
-import { Heart, Mic, Sparkles } from 'lucide-react';
+import { Globe2, Heart, Loader2, Mic, ShieldAlert, Sparkles, Users } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Tag } from '../ui/Tag';
 import type { Story } from '../../types/contracts';
+
+/** Small status/visibility chip shown on the writer's own stories. */
+function OwnStoryChip({ story }: { story: Story }) {
+  if (!story.isMine) return null;
+  if (story.status === 'processing' || story.status === 'draft') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-surface-secondary px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-text-secondary">
+        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+        Processing
+      </span>
+    );
+  }
+  if (story.status === 'flagged') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary-dark">
+        <ShieldAlert className="h-3 w-3" aria-hidden />
+        Needs a change
+      </span>
+    );
+  }
+  if (story.visibility === 'community') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary-dark">
+        <Globe2 className="h-3 w-3" aria-hidden />
+        Everyone
+      </span>
+    );
+  }
+  if (story.visibility === 'family') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-accent/30 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary-dark">
+        <Users className="h-3 w-3" aria-hidden />
+        Family
+      </span>
+    );
+  }
+  return null;
+}
 
 export type StoryCardVariant = 'compact' | 'featured' | 'editorial';
 
@@ -151,6 +189,7 @@ export function StoryCard({
           <span className="font-handwritten text-sm text-text-secondary">
             {formatHandwrittenDate(story.createdAt)}
           </span>
+          <OwnStoryChip story={story} />
         </div>
         <h4 className="mt-1 truncate font-display text-lg font-semibold text-text-primary">
           {story.title}

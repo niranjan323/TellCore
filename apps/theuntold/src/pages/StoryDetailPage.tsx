@@ -144,6 +144,18 @@ export function StoryDetailPage() {
         </div>
       </header>
 
+      {story.isMine && story.status === 'flagged' && story.moderationReason && (
+        <div className="mx-auto mb-6 max-w-story rounded-md border border-accent bg-accent/15 p-4 text-sm text-primary-dark">
+          <p className="font-semibold">This story isn&apos;t shared yet.</p>
+          <p className="mt-1">{story.moderationReason}</p>
+        </div>
+      )}
+      {story.isMine && (story.status === 'processing' || story.status === 'draft') && (
+        <div className="mx-auto mb-6 max-w-story rounded-md border bg-surface-secondary p-4 text-sm text-text-secondary">
+          We&apos;re still preparing this story — the polished version appears here shortly.
+        </div>
+      )}
+
       <StoryReader story={story} />
 
       {story.isPreview && (

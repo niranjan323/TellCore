@@ -128,6 +128,7 @@ export interface UserResponse {
   email: string | null;
   name: string | null;
   preferredLanguage: string | null;
+  isProfilePublic?: boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -282,4 +283,5 @@ export interface AppNotification {
   body: string;
   createdAt: string;
   read: boolean;
+  linkRoute?: string | null;
 }

@@ -228,6 +228,23 @@ Notes: Groq deprecated llama-3.3 — models now openai/gpt-oss-120b + gpt-oss-sa
 India-registered Stripe account ⇒ export payments need customer name+address
 (BillingAddressCollection=required set; hosted Checkout collects it).
 
+### Day 2.5 (Sep 1) — Frontend coverage audit (developer request)
+```
+✅ Profile → Account section: user type + email card, "Continue with Google" for guests,
+   Sign out (POST /auth/logout + store clear), membership card (plan/renewal,
+   Upgrade CTA or "Manage subscription" → NEW Stripe customer-portal endpoint),
+   public/private profile toggle (PATCH /users/me/privacy)
+✅ /users/me now returns isProfilePublic
+✅ Notifications: click marks read + follows linkRoute
+✅ My Stories: status chips on own cards (Processing / Needs a change / Family / Everyone)
+✅ Story detail: flagged-reason + still-processing notices for the owner
+✅ Demo data seeded through the real pipeline: 5 named users, 7 community stories in
+   en/hi/es/te with hearts + views (scratchpad/seed_demo.py)
+⬜ Google OAuth client id (developer to create) — only guest login works until then
+⬜ Stripe customer portal: save the default portal config once in the Stripe test
+   dashboard (Settings → Billing → Customer portal → Save) or the Manage button 503s
+```
+
 ### Day 3 (Sep 3) — Mobile + ship
 ```
 ⬜ D3.1  Capacitor init + android + ios; permissions; icons/splash

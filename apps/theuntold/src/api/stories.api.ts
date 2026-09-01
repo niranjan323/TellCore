@@ -220,3 +220,10 @@ export async function createCheckoutSession(planKey: string): Promise<CheckoutSe
   });
   return data;
 }
+
+export async function createPortalSession(): Promise<CheckoutSession> {
+  const { data } = await apiClient.post<CheckoutSession>('/billing/portal-session', {
+    returnUrl: `${window.location.origin}/profile`,
+  });
+  return data;
+}

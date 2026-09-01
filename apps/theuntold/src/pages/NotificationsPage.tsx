@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Heart, PenLine, Sparkles, Users, type LucideIcon } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
-import { fetchNotifications } from '../api/stories.api';
+import { fetchNotifications, markNotificationRead } from '../api/stories.api';
 import type { AppNotification, NotificationKind } from '../types/contracts';
 
 const ICONS: Record<NotificationKind, LucideIcon> = {
@@ -23,10 +24,24 @@ function relativeDate(iso: string): string {
 }
 
 export function NotificationsPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['notifications', 'theuntold'],
     queryFn: fetchNotifications,
   });
+
+  async function handleOpen(notification: AppNotification) {
+    if (!notification.read) {
+      try {
+        await markNotificationRead(notification.id);
+        await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      } catch {
+        // read state is a nicety — never block navigation on it
+      }
+    }
+    if (notification.linkRoute) navigate(notification.linkRoute);
+  }
 
   const unread = (data ?? []).filter((n) => !n.read).length;
 
@@ -60,7 +75,7 @@ export function NotificationsPage() {
         <ul className="flex flex-col gap-3" data-stagger>
           {(data ?? []).map((n, i) => (
             <ScrollReveal as="li" key={n.id} variant="rise" index={i}>
-              <NotificationItem notification={n} />
+              <NotificationItem notification={n} onOpen={() => handleOpen(n)} />
             </ScrollReveal>
           ))}
         </ul>
@@ -69,12 +84,24 @@ export function NotificationsPage() {
   );
 }
 
-function NotificationItem({ notification }: { notification: AppNotification }) {
+function NotificationItem({
+  notification,
+  onOpen,
+}: {
+  notification: AppNotification;
+  onOpen: () => void;
+}) {
   const Icon = ICONS[notification.kind] ?? Bell;
   const celebratory = notification.kind === 'story-featured';
   return (
     <li
-      className={`relative flex items-start gap-3 overflow-hidden rounded-md border p-4 ${
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onOpen();
+      }}
+      className={`relative flex cursor-pointer items-start gap-3 overflow-hidden rounded-md border p-4 transition-shadow hover:shadow-sm ${
         celebratory
           ? 'border-accent bg-accent/15 animate-warm-glow'
           : notification.read

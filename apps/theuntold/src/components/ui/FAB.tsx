@@ -15,7 +15,7 @@ interface FABProps {
 export function FAB({ onClick, ariaLabel, icon, placement = 'mobile-bottom' }: FABProps) {
   const positioning =
     placement === 'mobile-bottom'
-      ? 'fixed bottom-[68px] left-1/2 -translate-x-1/2 md:bottom-8 md:left-auto md:right-8 md:translate-x-0'
+      ? 'fixed bottom-[calc(68px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 md:bottom-8 md:left-auto md:right-8 md:translate-x-0'
       : 'fixed bottom-8 right-8';
 
   return (

@@ -57,7 +57,7 @@ export function OnboardingPage() {
         <div className="absolute inset-0 bg-noise opacity-50 mix-blend-multiply" />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-5 py-5 md:px-10">
+      <header className="pt-safe relative z-10 flex items-center justify-between px-5 py-5 md:px-10">
         <Logo size="sm" />
         <span className="hidden font-handwritten text-base text-text-secondary md:inline">
           Page {step + 1} of {STEPS.length}

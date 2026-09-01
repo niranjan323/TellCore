@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TheUntold</string>
+    <string name="title_activity_main">TheUntold</string>
+    <string name="package_name">com.tellcore.theuntold</string>
+    <string name="custom_url_scheme">com.tellcore.theuntold</string>
+</resources>

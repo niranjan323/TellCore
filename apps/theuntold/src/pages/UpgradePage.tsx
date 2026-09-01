@@ -41,7 +41,7 @@ export function UpgradePage() {
   const isPaid = status.data?.userType === 'paid';
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-surface px-4 py-8 md:px-10">
+    <div className="pt-safe relative min-h-dvh overflow-hidden bg-surface px-4 py-8 md:px-10">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
         <div className="absolute inset-0 mesh-warm opacity-80" />
         <div className="absolute inset-0 bg-paper-grain opacity-70" />

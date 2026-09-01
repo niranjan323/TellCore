@@ -66,7 +66,7 @@ export function VoiceRecordingPage() {
         <div className="absolute inset-0 bg-noise opacity-50 mix-blend-multiply" />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-4 py-4 md:px-10">
+      <header className="pt-safe relative z-10 flex items-center justify-between px-4 py-4 md:px-10">
         <button
           type="button"
           onClick={() => navigate(-1)}

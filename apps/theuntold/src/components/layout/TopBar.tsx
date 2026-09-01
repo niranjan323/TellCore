@@ -11,7 +11,7 @@ interface TopBarProps {
 export function TopBar({ navItems, unreadCount = 0 }: TopBarProps) {
   const hasNotifications = navItems.some((i) => i.key === 'notifs');
   return (
-    <header className="sticky top-0 z-30 border-b bg-surface/80 backdrop-blur">
+    <header className="pt-safe sticky top-0 z-30 border-b bg-surface/80 backdrop-blur">
       <div className="mx-auto flex w-full max-w-page items-center justify-between px-4 py-3 md:px-8">
         <Link to="/" className="inline-flex">
           <Logo size="md" />

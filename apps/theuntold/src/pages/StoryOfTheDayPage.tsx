@@ -61,7 +61,7 @@ export function StoryOfTheDayPage() {
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-surface/85 px-3 py-1.5 text-sm font-medium text-text-primary shadow-sm backdrop-blur hover:bg-surface md:left-8"
+        className="top-safe absolute left-4 inline-flex items-center gap-1.5 rounded-full bg-surface/85 px-3 py-1.5 text-sm font-medium text-text-primary shadow-sm backdrop-blur hover:bg-surface md:left-8"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Back

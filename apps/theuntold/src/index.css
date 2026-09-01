@@ -314,3 +314,7 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* iOS notch / Android cutout safe areas (viewport-fit=cover) */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.top-safe { top: calc(1rem + env(safe-area-inset-top)); }

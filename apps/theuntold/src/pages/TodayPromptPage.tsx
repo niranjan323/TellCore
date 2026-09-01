@@ -24,7 +24,7 @@ export function TodayPromptPage() {
         <div className="absolute inset-0 bg-noise opacity-50 mix-blend-multiply" />
       </div>
 
-      <div className="relative mx-auto max-w-page px-4 py-6 md:px-10 md:py-10">
+      <div className="pt-safe relative mx-auto max-w-page px-4 py-6 md:px-10 md:py-10">
         <button
           type="button"
           onClick={() => navigate(-1)}

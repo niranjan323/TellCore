@@ -81,7 +81,10 @@ export function MobileBottomNav({ items }: NavProps) {
         className="fixed inset-x-0 bottom-0 z-40 border-t bg-surface md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <ul className="grid grid-cols-5 items-stretch">
+        <ul
+          className="grid items-stretch"
+          style={{ gridTemplateColumns: `repeat(${tabItems.length + 1}, minmax(0, 1fr))` }}
+        >
           {leftItems.map((item) => (
             <MobileTab key={item.key} item={item} />
           ))}

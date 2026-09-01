@@ -98,7 +98,7 @@ export function WriteStoryPage() {
         />
       </div>
 
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-surface/80 px-4 py-3 backdrop-blur md:px-10">
+      <header className="pt-safe sticky top-0 z-10 flex items-center justify-between border-b bg-surface/80 px-4 py-3 backdrop-blur md:px-10">
         <button
           type="button"
           onClick={() => navigate(-1)}

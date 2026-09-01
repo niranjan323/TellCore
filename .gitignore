@@ -21,3 +21,9 @@ Thumbs.db
 uploads/
 *.log
 *.tmp
+
+# Python (services/ai)
+.venv/
+__pycache__/
+*.pyc
+services/ai/.env

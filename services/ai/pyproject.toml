@@ -1,0 +1,15 @@
+[project]
+name = "theuntold-ai"
+version = "0.1.0"
+description = "Internal AI pipeline for TellCore/TheUntold — transcription, cleanup, moderation, translation, tags, embeddings"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "langgraph>=0.2",
+    "langchain-groq>=0.2",
+    "groq>=0.11",
+    "fastembed>=0.4",
+    "python-multipart>=0.0.9",
+    "pydantic-settings>=2.4",
+]

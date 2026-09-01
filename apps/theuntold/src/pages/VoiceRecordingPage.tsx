@@ -1,34 +1,56 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { VoiceRecorder } from '../components/writing/VoiceRecorder';
-import { Toast } from '../components/ui/Toast';
+import { VisibilityPicker } from '../components/writing/VisibilityPicker';
+import { Toast, type ToastKind } from '../components/ui/Toast';
+import { createStory, processStory, uploadStoryVoice } from '../api/stories.api';
 import { useDraftStore } from '../store/draftStore';
 import { usePrompt } from '../hooks/usePrompt';
 
 export function VoiceRecordingPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { prompt } = usePrompt();
-  const setAudio = useDraftStore((s) => s.setAudio);
-  const markSaved = useDraftStore((s) => s.markSaved);
+  const tags = useDraftStore((s) => s.tags);
+  const visibility = useDraftStore((s) => s.visibility);
+  const setVisibility = useDraftStore((s) => s.setVisibility);
   const reset = useDraftStore((s) => s.reset);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; kind: ToastKind } | null>(null);
 
-  function handleSave(blob: Blob, durationSeconds: number) {
+  async function handleSave(blob: Blob, durationSeconds: number) {
     setSaving(true);
-    // The voice upload endpoint takes a sessionId. Until the Stories backend
-    // exists we keep the recording in the local draft only — the URL goes to
-    // sessionStorage and the story shows up in My Stories on next visit.
-    const url = URL.createObjectURL(blob);
-    setAudio(url, durationSeconds);
-    markSaved();
-    setToast('Saved to your library');
-    setTimeout(() => {
-      reset();
+    try {
+      const created = await createStory({
+        kind: 'voice',
+        visibility,
+        promptKey: prompt.key,
+        tags,
+      });
+      await uploadStoryVoice(created.storyId, blob, durationSeconds);
+      await processStory(created.storyId);
+      await queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      await queryClient.invalidateQueries({ queryKey: ['streak'] });
+      setToast({ message: 'Saved to your library', kind: 'success' });
+      setTimeout(() => {
+        reset();
+        setSaving(false);
+        navigate('/stories', { replace: true });
+      }, 1100);
+    } catch (error) {
       setSaving(false);
-      navigate('/stories', { replace: true });
-    }, 1100);
+      const limitHit =
+        isAxiosError(error) && error.response?.data?.error === 'story_limit_reached';
+      setToast({
+        message: limitHit
+          ? 'Free story limit reached — upgrade to keep recording.'
+          : 'Could not save right now — try again.',
+        kind: 'error',
+      });
+    }
   }
 
   function handleCancel() {
@@ -59,6 +81,10 @@ export function VoiceRecordingPage() {
         </span>
       </header>
 
+      <div className="relative z-10 flex justify-center px-4 pt-2">
+        <VisibilityPicker value={visibility} onChange={setVisibility} />
+      </div>
+
       <div className="relative animate-page">
         <VoiceRecorder
           prompt={prompt.question}
@@ -68,7 +94,7 @@ export function VoiceRecordingPage() {
         />
       </div>
 
-      {toast && <Toast message={toast} kind="success" onDismiss={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} kind={toast.kind} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

@@ -147,6 +147,8 @@ export interface Author {
   initials: string;
 }
 
+export type StoryProcessingStatus = 'draft' | 'processing' | 'published' | 'flagged';
+
 export interface Story {
   id: string;
   author: Author;
@@ -163,6 +165,64 @@ export interface Story {
   isFeatured: boolean;
   heartCount: number;
   visibility: StoryVisibility;
+  // Server-side gating/processing fields (absent in older cached data).
+  viewCount?: number;
+  status?: StoryProcessingStatus;
+  moderationReason?: string | null;
+  originalLanguage?: string | null;
+  isPreview?: boolean;
+  isMine?: boolean;
+  hasHearted?: boolean;
+}
+
+export interface CreateStoryInput {
+  title?: string | null;
+  text?: string | null;
+  kind: StoryKind;
+  visibility: StoryVisibility;
+  promptKey?: string | null;
+  tags?: string[];
+}
+
+export interface CreatedStory {
+  storyId: string;
+  status: StoryProcessingStatus;
+}
+
+export interface StoryStatus {
+  storyId: string;
+  status: StoryProcessingStatus;
+  moderationReason: string | null;
+}
+
+export interface HeartResult {
+  heartCount: number;
+  hasHearted: boolean;
+}
+
+export interface VaultInvite {
+  token: string;
+  inviteUrl: string;
+  expiresAt: string;
+}
+
+export interface BillingPlan {
+  key: string;
+  name: string;
+  interval: string;
+  display: string;
+  description: string;
+}
+
+export interface BillingStatus {
+  userType: UserType;
+  planKey: string | null;
+  status: string | null;
+  currentPeriodEnd: string | null;
+}
+
+export interface CheckoutSession {
+  url: string;
 }
 
 export interface DailyPrompt {

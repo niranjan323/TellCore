@@ -1,26 +1,61 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, MoreHorizontal, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Heart, Lock, MoreHorizontal, Share2, Sparkles, Trash2 } from 'lucide-react';
 import { StoryReader } from '../components/stories/StoryReader';
 import { Button } from '../components/ui/Button';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { Spinner } from '../components/ui/Spinner';
 import { Toast } from '../components/ui/Toast';
-import { fetchStoryById } from '../api/stories.api';
+import {
+  deleteStory,
+  fetchStoryById,
+  recordStoryView,
+  toggleStoryHeart,
+} from '../api/stories.api';
 
 export function StoryDetailPage() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [heart, setHeart] = useState<{ count: number; hearted: boolean } | null>(null);
 
   const { data: story, isLoading } = useQuery({
     queryKey: ['story', storyId],
     queryFn: () => fetchStoryById(storyId!),
     enabled: !!storyId,
   });
+
+  // Count the view once per visit (backend dedupes per user per day).
+  useEffect(() => {
+    if (story && !story.isMine) void recordStoryView(story.id);
+  }, [story?.id, story?.isMine]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleHeart() {
+    if (!story) return;
+    try {
+      const result = await toggleStoryHeart(story.id);
+      setHeart({ count: result.heartCount, hearted: result.hasHearted });
+    } catch {
+      setToast("Couldn't do that right now");
+    }
+  }
+
+  async function handleDelete() {
+    if (!story) return;
+    setConfirmDelete(false);
+    try {
+      await deleteStory(story.id);
+      await queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      setToast('Story deleted');
+      setTimeout(() => navigate('/stories', { replace: true }), 800);
+    } catch {
+      setToast("Couldn't delete right now — try again");
+    }
+  }
 
   async function handleShare() {
     if (!story) return;
@@ -83,23 +118,27 @@ export function StoryDetailPage() {
               onMouseLeave={() => setMenuOpen(false)}
             >
               <MenuButton onClick={handleShare} icon={<Share2 className="h-4 w-4" aria-hidden />} label="Share" />
-              <MenuButton
-                onClick={() => {
-                  setMenuOpen(false);
-                  setToast('Submitted for feature consideration');
-                }}
-                icon={<Sparkles className="h-4 w-4" aria-hidden />}
-                label="Submit for feature"
-              />
-              <MenuButton
-                destructive
-                onClick={() => {
-                  setMenuOpen(false);
-                  setConfirmDelete(true);
-                }}
-                icon={<Trash2 className="h-4 w-4" aria-hidden />}
-                label="Delete"
-              />
+              {story.isMine && story.visibility !== 'community' && (
+                <MenuButton
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setToast('Change visibility to "Everyone" when saving to share with the community');
+                  }}
+                  icon={<Sparkles className="h-4 w-4" aria-hidden />}
+                  label="Submit for feature"
+                />
+              )}
+              {story.isMine && (
+                <MenuButton
+                  destructive
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setConfirmDelete(true);
+                  }}
+                  icon={<Trash2 className="h-4 w-4" aria-hidden />}
+                  label="Delete"
+                />
+              )}
             </div>
           )}
         </div>
@@ -107,7 +146,43 @@ export function StoryDetailPage() {
 
       <StoryReader story={story} />
 
+      {story.isPreview && (
+        <div className="editorial-card mx-auto mt-8 max-w-story rounded-lg border p-6 text-center">
+          <Lock className="mx-auto mb-3 h-6 w-6 text-primary" aria-hidden />
+          <p className="font-display text-lg text-text-primary">
+            The rest of this story is waiting.
+          </p>
+          <p className="mt-1 text-sm text-text-secondary">
+            Premium members read every community story in full, with audio.
+          </p>
+          <Link
+            to="/upgrade"
+            className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-surface transition-colors hover:bg-primary-dark"
+          >
+            Unlock with Premium
+          </Link>
+        </div>
+      )}
+
       <div className="mx-auto mt-10 flex max-w-story flex-col gap-2">
+        {!story.isMine && (
+          <Button
+            label={
+              (heart?.hearted ?? story.hasHearted)
+                ? `Held close by ${heart?.count ?? story.heartCount}`
+                : `Hold this story close · ${heart?.count ?? story.heartCount}`
+            }
+            variant="secondary"
+            leadingIcon={
+              <Heart
+                className={`h-4 w-4 ${(heart?.hearted ?? story.hasHearted) ? 'fill-current text-primary' : ''}`}
+                aria-hidden
+              />
+            }
+            onClick={handleHeart}
+            fullWidth
+          />
+        )}
         <Button
           label="Share this story"
           variant="secondary"
@@ -123,11 +198,7 @@ export function StoryDetailPage() {
         description="You can&apos;t undo this. Make sure you have a copy if you want to keep it."
         confirmLabel="Delete forever"
         destructive
-        onConfirm={() => {
-          setConfirmDelete(false);
-          setToast('Story deleted');
-          setTimeout(() => navigate('/stories', { replace: true }), 800);
-        }}
+        onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
 

@@ -190,16 +190,21 @@ Pattern stays Controller → Service → Repository, interface + class, thin con
 
 ### Day 1 (Sep 1) — Database + backend core
 ```
-⬜ D1.1  Swap Docker container to mssql/server:2025-latest; fresh CoreBackend DB;
-         run scripts 001–021 + 099 + 100; verify seed
-⬜ D1.2  Write + run scripts 101–113
-⬜ D1.3  Entities + DTOs for Stories/Feed/Streak/Vault/Notifications/Billing
-⬜ D1.4  StoryRepository + StoryService + StoriesController (CRUD, views, visibility, preview gating)
-⬜ D1.5  Feed + Streak + Vault + Notifications (repos, services, controllers)
-⬜ D1.6  Swap apps/theuntold stories.api.ts from fixtures → real API; re-enable /sessions voice upload path
-⬜ D1.7  End-to-end local check: write text story → appears in My Stories → publish → in feed
-⬜ D1.8  Commit(s) + update PROJECT_MEMORY.md
+✅ D1.1  mssql/server:2025-latest running (container `sqlserver2025`, volume tellcore-sql2025-data);
+         fresh CoreBackend DB; scripts 001–021 + 099 + 100 verified (sqlcmd needs -I for filtered indexes)
+✅ D1.2  Scripts 101–115 written + run (115_StoryHearts added; 114 seeds settings incl. payments.plans)
+✅ D1.3  Entities + DTOs for Stories/Feed/Streak/Vault/Notifications/Billing (+ AI pipeline contracts)
+✅ D1.4  StoryRepository + StoryService + StoriesController (CRUD, views, hearts, visibility, preview gating)
+✅ D1.5  Feed + Profile(streak/stats/milestones) + Vault + Notifications + Billing (Stripe.net 52.4.0)
+✅ D1.6  stories.api.ts swapped to real API (same fetch* signatures); Write/Voice pages save via
+         POST /stories (+voice upload +process); VisibilityPicker added; StoryDetail wired
+         (views, hearts, delete, preview→/upgrade card)
+✅ D1.7  End-to-end verified via API: guest → text story → process (AI-absent fallback → private
+         + honest reason) → mine/streak/plans; voice story → upload → published (family)
+✅ D1.8  Committed (c3bf551 backend, frontend follows) + memory updated
 ```
+Extra in D1: story processing worker (channel queue), AiPipelineClient, rate limiting,
+security headers, LIKE search fallback, lazy story-of-the-day picker + featured notification.
 
 ### Day 2 (Sep 2) — AI pipeline + payments
 ```

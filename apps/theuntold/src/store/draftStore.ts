@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { StoryVisibility } from '../types/contracts';
 
 export type DraftKind = 'voice' | 'text';
 
@@ -8,12 +9,14 @@ interface DraftState {
   kind: DraftKind | null;
   text: string;
   tags: string[];
+  visibility: StoryVisibility;
   audioBlobUrl: string | null;
   durationSeconds: number | null;
   lastSavedAt: string | null;
   setKind: (kind: DraftKind, promptKey: string | null) => void;
   setText: (text: string) => void;
   toggleTag: (tag: string) => void;
+  setVisibility: (visibility: StoryVisibility) => void;
   setAudio: (blobUrl: string | null, durationSeconds: number | null) => void;
   markSaved: () => void;
   reset: () => void;
@@ -26,6 +29,7 @@ export const useDraftStore = create<DraftState>()(
       kind: null,
       text: '',
       tags: [],
+      visibility: 'private',
       audioBlobUrl: null,
       durationSeconds: null,
       lastSavedAt: null,
@@ -35,6 +39,7 @@ export const useDraftStore = create<DraftState>()(
         set((s) => ({
           tags: s.tags.includes(tag) ? s.tags.filter((t) => t !== tag) : [...s.tags, tag],
         })),
+      setVisibility: (visibility) => set({ visibility }),
       setAudio: (audioBlobUrl, durationSeconds) =>
         set({ audioBlobUrl, durationSeconds }),
       markSaved: () => set({ lastSavedAt: new Date().toISOString() }),
@@ -44,6 +49,7 @@ export const useDraftStore = create<DraftState>()(
           kind: null,
           text: '',
           tags: [],
+          visibility: 'private',
           audioBlobUrl: null,
           durationSeconds: null,
           lastSavedAt: null,
@@ -56,6 +62,7 @@ export const useDraftStore = create<DraftState>()(
         kind: s.kind,
         text: s.text,
         tags: s.tags,
+        visibility: s.visibility,
         lastSavedAt: s.lastSavedAt,
       }),
     },

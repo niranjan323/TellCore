@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { Button } from '../components/ui/Button';
 import { TextEditor } from '../components/writing/TextEditor';
-import { Toast } from '../components/ui/Toast';
+import { VisibilityPicker } from '../components/writing/VisibilityPicker';
+import { Toast, type ToastKind } from '../components/ui/Toast';
+import { createStory, processStory } from '../api/stories.api';
 import { useDraftStore } from '../store/draftStore';
 import { usePrompt } from '../hooks/usePrompt';
 
@@ -19,14 +23,18 @@ function relativeAgo(iso: string | null): string | null {
 
 export function WriteStoryPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { prompt } = usePrompt();
   const text = useDraftStore((s) => s.text);
   const setText = useDraftStore((s) => s.setText);
+  const tags = useDraftStore((s) => s.tags);
+  const visibility = useDraftStore((s) => s.visibility);
+  const setVisibility = useDraftStore((s) => s.setVisibility);
   const lastSavedAt = useDraftStore((s) => s.lastSavedAt);
   const markSaved = useDraftStore((s) => s.markSaved);
   const reset = useDraftStore((s) => s.reset);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; kind: ToastKind } | null>(null);
 
   // Auto-save every 3 seconds when text changes.
   useEffect(() => {
@@ -42,16 +50,37 @@ export function WriteStoryPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  function handleSave() {
+  async function handleSave() {
     if (!text.trim()) return;
     setSaving(true);
-    markSaved();
-    setToast('Story saved to your library');
-    setTimeout(() => {
-      reset();
+    try {
+      const created = await createStory({
+        text,
+        kind: 'text',
+        visibility,
+        promptKey: prompt.key,
+        tags,
+      });
+      await processStory(created.storyId);
+      await queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      await queryClient.invalidateQueries({ queryKey: ['streak'] });
+      setToast({ message: 'Story saved to your library', kind: 'success' });
+      setTimeout(() => {
+        reset();
+        setSaving(false);
+        navigate('/stories', { replace: true });
+      }, 900);
+    } catch (error) {
       setSaving(false);
-      navigate('/stories', { replace: true });
-    }, 900);
+      const limitHit =
+        isAxiosError(error) && error.response?.data?.error === 'story_limit_reached';
+      setToast({
+        message: limitHit
+          ? 'Free story limit reached — upgrade to keep writing.'
+          : 'Could not save right now. Your draft is safe — try again.',
+        kind: 'error',
+      });
+    }
   }
 
   return (
@@ -96,10 +125,8 @@ export function WriteStoryPage() {
       </main>
 
       <footer className="sticky bottom-0 border-t bg-surface/85 px-4 py-3 backdrop-blur md:px-10 md:py-4">
-        <div className="mx-auto flex max-w-story items-center justify-between">
-          <p className="font-handwritten text-base text-text-hint">
-            Take your time. We&apos;ll save as you go.
-          </p>
+        <div className="mx-auto flex max-w-story flex-wrap items-center justify-between gap-3">
+          <VisibilityPicker value={visibility} onChange={setVisibility} />
           <Button
             label="Save story"
             variant="primary"
@@ -110,7 +137,7 @@ export function WriteStoryPage() {
         </div>
       </footer>
 
-      {toast && <Toast message={toast} kind="success" onDismiss={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} kind={toast.kind} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

@@ -245,15 +245,24 @@ India-registered Stripe account ⇒ export payments need customer name+address
    dashboard (Settings → Billing → Customer portal → Save) or the Manage button 503s
 ```
 
-### Day 3 (Sep 3) — Mobile + ship
+### Day 3 (Sep 1–3) — Mobile + ship (branch `feature/untold-mobile`)
 ```
-⬜ D3.1  Capacitor init + android + ios; permissions; icons/splash
-⬜ D3.2  Debug APK built + iOS app running in simulator; device smoke test of voice recording
-⬜ D3.3  Mobile polish audit (safe-area insets, keyboard, touch targets)
+✅ D3.1  Capacitor 8 added (com.tellcore.theuntold): android + ios projects committed,
+         mic permissions set (RECORD_AUDIO / NSMicrophoneUsageDescription). iOS uses SPM
+         (no CocoaPods). Icons/splash still Capacitor defaults — brand pass before stores.
+✅ D3.2a iOS simulator build green (Xcode 16.4, xcodebuild -project App.xcodeproj)
+🔄 D3.2b Android debug APK building (needs JDK 21 — installed via brew openjdk@21;
+         run gradlew with JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home)
+✅ D3.3  Mobile audit: bottom tab bar was already responsive (FAB center slot, md:hidden);
+         fixed: dynamic tab columns (guest=4 items), safe-area top inset on TopBar +
+         all full-bleed page headers (.pt-safe/.top-safe utilities), FAB bottom inset
 ⬜ D3.4  Deploy: Azure SQL free + run scripts; CoreBackend container; AI service; web; R2 storage impl
+         (NEEDS: Azure account, Cloudflare account, GitHub repo remote from developer)
 ⬜ D3.5  GitHub Actions: ci.yml (build/test per path) + deploy.yml (master → hosts)
 ⬜ D3.6  Demo walkthrough checklist; final PROJECT_MEMORY.md + PLAN.md update
 ```
+Mobile API URL note: apps bundle the web build — iOS simulator reaches localhost fine;
+real devices need the deployed API URL baked in (rebuild + cap sync after D3.4).
 
 ---
 

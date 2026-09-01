@@ -12,7 +12,7 @@ public class UserRepository : IUserRepository
 
     private const string UserColumns = @"
         Id, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, IsDeleted,
-        UserType, Email, Name, GoogleId, DeviceToken, PreferredLanguage,
+        UserType, Email, Name, GoogleId, PasswordHash, DeviceToken, PreferredLanguage,
         SubscriptionExpiresAt, LastLoginAt, IsProfilePublic";
 
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -55,10 +55,10 @@ public class UserRepository : IUserRepository
     {
         const string sql = @"
             INSERT INTO dbo.Users
-                (Id, UserType, Email, Name, GoogleId, DeviceToken, PreferredLanguage,
+                (Id, UserType, Email, Name, GoogleId, PasswordHash, DeviceToken, PreferredLanguage,
                  SubscriptionExpiresAt, LastLoginAt, CreatedAt)
             VALUES
-                (@Id, @UserType, @Email, @Name, @GoogleId, @DeviceToken, @PreferredLanguage,
+                (@Id, @UserType, @Email, @Name, @GoogleId, @PasswordHash, @DeviceToken, @PreferredLanguage,
                  @SubscriptionExpiresAt, @LastLoginAt, SYSUTCDATETIME())";
 
         if (user.Id == Guid.Empty) user.Id = Guid.NewGuid();

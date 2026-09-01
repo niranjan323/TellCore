@@ -6,6 +6,7 @@ public class User : BaseEntity
     public string? Email { get; set; }
     public string? Name { get; set; }
     public string? GoogleId { get; set; }
+    public string? PasswordHash { get; set; }
     public string? DeviceToken { get; set; }
     public string? PreferredLanguage { get; set; }
     public DateTime? SubscriptionExpiresAt { get; set; }

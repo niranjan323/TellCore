@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Feather, Quote } from 'lucide-react';
 import { WordReveal } from '../components/ui/WordReveal';
 import { Spinner } from '../components/ui/Spinner';
+import { useQuery } from '@tanstack/react-query';
 import { useMagnetic } from '../hooks/useMagnetic';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
-import { authGoogle, authGuest } from '../api/auth.api';
+import { authGoogle, authGuest, fetchAuthMethods } from '../api/auth.api';
 import { useAuthStore } from '../store/authStore';
 import { featuredStory, recentStoriesFixtures } from '../data/storyFixtures';
 
@@ -16,6 +17,8 @@ export function WelcomePage() {
   const onboardingDone = useAuthStore((s) => s.onboardingComplete);
   const magneticRef = useMagnetic<HTMLButtonElement>(0.16);
   const { signIn, fallbackRef } = useGoogleSignIn();
+  const methods = useQuery({ queryKey: ['auth-methods'], queryFn: fetchAuthMethods });
+  const enabled = (m: string) => (methods.data ?? ['guest']).includes(m as never);
 
   const [loadingGuest, setLoadingGuest] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -173,30 +176,44 @@ export function WelcomePage() {
             )}
 
             <div className="mt-7 flex flex-col gap-3">
-              <button
-                ref={magneticRef}
-                type="button"
-                onClick={handleGoogle}
-                disabled={loadingGoogle}
-                className="relative inline-flex min-h-[52px] items-center justify-center gap-2 overflow-hidden rounded-md bg-accent px-6 py-3 text-[15px] font-semibold text-primary-dark shadow-[0_18px_30px_-18px_rgba(122,79,48,0.5)] transition-colors hover:bg-accent/85 disabled:opacity-50"
-              >
-                {loadingGoogle ? <Spinner size="sm" /> : <GoogleMark />}
-                Continue with Google
-              </button>
+              {enabled('google') && (
+                <button
+                  ref={magneticRef}
+                  type="button"
+                  onClick={handleGoogle}
+                  disabled={loadingGoogle}
+                  className="relative inline-flex min-h-[52px] items-center justify-center gap-2 overflow-hidden rounded-md bg-accent px-6 py-3 text-[15px] font-semibold text-primary-dark shadow-[0_18px_30px_-18px_rgba(122,79,48,0.5)] transition-colors hover:bg-accent/85 disabled:opacity-50"
+                >
+                  {loadingGoogle ? <Spinner size="sm" /> : <GoogleMark />}
+                  Continue with Google
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={handleGuest}
-                disabled={loadingGuest}
-                className="group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-md border border-border bg-surface/70 px-6 py-3 text-[15px] font-medium text-text-primary transition-colors hover:bg-surface disabled:opacity-50"
-              >
-                {loadingGuest ? <Spinner size="sm" /> : null}
-                Continue as guest
-                <ArrowRight
-                  className="h-4 w-4 text-primary-dark transition-transform group-hover:translate-x-0.5"
-                  aria-hidden
-                />
-              </button>
+              {enabled('password') && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/auth')}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-md bg-primary px-6 py-3 text-[15px] font-semibold text-surface transition-colors hover:bg-primary-dark"
+                >
+                  Sign in with email
+                </button>
+              )}
+
+              {enabled('guest') && (
+                <button
+                  type="button"
+                  onClick={handleGuest}
+                  disabled={loadingGuest}
+                  className="group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-md border border-border bg-surface/70 px-6 py-3 text-[15px] font-medium text-text-primary transition-colors hover:bg-surface disabled:opacity-50"
+                >
+                  {loadingGuest ? <Spinner size="sm" /> : null}
+                  Continue as guest
+                  <ArrowRight
+                    className="h-4 w-4 text-primary-dark transition-transform group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                </button>
+              )}
 
               <div ref={fallbackRef} hidden className="flex justify-center pt-1" />
 

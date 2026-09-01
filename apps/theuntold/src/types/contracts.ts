@@ -1,5 +1,7 @@
 export type UserType = 'guest' | 'registered' | 'paid';
 
+export type AuthMethod = 'google' | 'password' | 'guest';
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;

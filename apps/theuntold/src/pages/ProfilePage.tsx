@@ -173,7 +173,7 @@ export function ProfilePage() {
             </div>
             {effectiveType === 'guest' && (
               <Button
-                label="Continue with Google"
+                label="Sign in or create account"
                 variant="primary"
                 onClick={() => navigate('/auth')}
               />

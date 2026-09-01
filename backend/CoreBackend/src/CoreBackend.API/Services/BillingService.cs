@@ -77,6 +77,10 @@ public class BillingService : IBillingService
             CustomerEmail = user.Email,
             Metadata = metadata,
             SubscriptionData = new SessionSubscriptionDataOptions { Metadata = metadata },
+            // India-registered Stripe accounts must collect the customer's name and
+            // address for export (international) transactions — Checkout handles the
+            // collection when this is required.
+            BillingAddressCollection = "required",
         }, cancellationToken: ct);
 
         return (new CheckoutSessionResponse(session.Url), null);
@@ -106,6 +110,7 @@ public class BillingService : IBillingService
             case "checkout.session.completed":
                 await HandleCheckoutCompletedAsync((Session)stripeEvent.Data.Object, ct);
                 break;
+            case "customer.subscription.created":
             case "customer.subscription.updated":
             case "customer.subscription.deleted":
                 await HandleSubscriptionChangedAsync((Stripe.Subscription)stripeEvent.Data.Object, ct);

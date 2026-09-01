@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Search } from 'lucide-react';
 import { StoryCard } from '../components/stories/StoryCard';
 import { Spinner } from '../components/ui/Spinner';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
-import { fetchFeaturedFeed } from '../api/stories.api';
+import { fetchFeaturedFeed, searchStories } from '../api/stories.api';
 
 type Range = 'today' | 'week' | 'month' | 'all';
 
@@ -18,7 +19,22 @@ const RANGE_TABS: { key: Range; label: string; days: number | null }[] = [
 export function FeaturedFeedPage() {
   const navigate = useNavigate();
   const [range, setRange] = useState<Range>('week');
+  const [query, setQuery] = useState('');
+  const [debounced, setDebounced] = useState('');
   const { data, isLoading } = useQuery({ queryKey: ['featured-feed'], queryFn: fetchFeaturedFeed });
+
+  // Debounce the semantic search so we don't hit the API on every keystroke.
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebounced(query.trim()), 450);
+    return () => window.clearTimeout(id);
+  }, [query]);
+
+  const search = useQuery({
+    queryKey: ['story-search', debounced],
+    queryFn: () => searchStories(debounced),
+    enabled: debounced.length > 1,
+  });
+  const searching = debounced.length > 1;
 
   const stories = useMemo(() => {
     const all = data ?? [];
@@ -45,6 +61,16 @@ export function FeaturedFeedPage() {
             for a moment.
           </p>
         </div>
+        <label className="grad-border inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2.5 md:max-w-md">
+          <Search className="h-4 w-4 text-text-hint" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search stories in any language — by meaning, not just words"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-text-hint"
+          />
+        </label>
         <div className="flex flex-wrap gap-1.5">
           {RANGE_TABS.map((t) => (
             <button
@@ -63,7 +89,29 @@ export function FeaturedFeedPage() {
         </div>
       </header>
 
-      {isLoading ? (
+      {searching ? (
+        search.isLoading ? (
+          <div className="flex justify-center py-12">
+            <Spinner size="lg" />
+          </div>
+        ) : (search.data ?? []).length === 0 ? (
+          <p className="postcard rounded-[20px] p-10 text-center text-text-secondary">
+            Nothing matched &ldquo;{debounced}&rdquo; yet.
+          </p>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" data-stagger>
+            {(search.data ?? []).map((s, i) => (
+              <ScrollReveal key={s.id} variant="rise" index={i} className="lift">
+                <StoryCard
+                  story={s}
+                  variant="editorial"
+                  onOpen={(story) => navigate(`/story/${story.id}`)}
+                />
+              </ScrollReveal>
+            ))}
+          </div>
+        )
+      ) : isLoading ? (
         <div className="flex justify-center py-12">
           <Spinner size="lg" />
         </div>

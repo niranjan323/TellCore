@@ -1,17 +1,67 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Mail, Shield, UserPlus } from 'lucide-react';
+import { Copy, Mail, Share2, Shield, UserPlus } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { Stamp } from '../components/ui/PaperEphemera';
-import { fetchFamilyMembers, fetchTimeCapsules } from '../api/stories.api';
+import { StoryCard } from '../components/stories/StoryCard';
+import { Toast } from '../components/ui/Toast';
+import {
+  createVaultInvite,
+  fetchFamilyMembers,
+  fetchTimeCapsules,
+  fetchVaultStories,
+} from '../api/stories.api';
 import { useAuthStore } from '../store/authStore';
 
 export function FamilyVaultPage() {
+  const navigate = useNavigate();
   const userType = useAuthStore((s) => s.userType);
   const members = useQuery({ queryKey: ['family'], queryFn: fetchFamilyMembers });
   const capsules = useQuery({ queryKey: ['capsules'], queryFn: fetchTimeCapsules });
+  const vaultStories = useQuery({ queryKey: ['vault-stories'], queryFn: fetchVaultStories });
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  async function handleCreateInvite() {
+    setCreating(true);
+    try {
+      const invite = await createVaultInvite();
+      setInviteUrl(invite.inviteUrl);
+    } catch {
+      setToast("Couldn't create an invite right now — try again.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleShareInvite() {
+    if (!inviteUrl) return;
+    const message = `I keep my life stories in a family vault on TheUntold. This link lets you in: ${inviteUrl}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: message });
+        return;
+      } catch {
+        // fall through to clipboard
+      }
+    }
+    await copyInvite();
+  }
+
+  async function copyInvite() {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setToast('Invite link copied');
+    } catch {
+      setToast("Couldn't copy on this device");
+    }
+  }
 
   if (userType !== 'paid') {
     return (
@@ -24,6 +74,12 @@ export function FamilyVaultPage() {
           The vault lets you share stories privately with family and schedule time capsules
           for the future.
         </p>
+        <Link
+          to="/upgrade"
+          className="mt-5 inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-surface transition-colors hover:bg-primary-dark"
+        >
+          Unlock with Premium
+        </Link>
       </div>
     );
   }
@@ -53,12 +109,37 @@ export function FamilyVaultPage() {
           <Button
             label="Add family member"
             variant="secondary"
+            loading={creating}
             leadingIcon={<UserPlus className="h-4 w-4" aria-hidden />}
-            onClick={() => {
-              /* would open the invite flow */
-            }}
+            onClick={handleCreateInvite}
           />
         </div>
+        {inviteUrl && (
+          <div className="postcard mb-4 rounded-[16px] p-5">
+            <p className="font-handwritten text-lg text-primary-dark">
+              Send this link to one family member — it works once and expires in 7 days.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center">
+              <code className="flex-1 overflow-x-auto whitespace-nowrap rounded-md border bg-surface px-3 py-2 text-xs text-text-secondary">
+                {inviteUrl}
+              </code>
+              <div className="flex gap-2">
+                <Button
+                  label="Copy"
+                  variant="secondary"
+                  leadingIcon={<Copy className="h-4 w-4" aria-hidden />}
+                  onClick={copyInvite}
+                />
+                <Button
+                  label="Share"
+                  variant="primary"
+                  leadingIcon={<Share2 className="h-4 w-4" aria-hidden />}
+                  onClick={handleShareInvite}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         {members.isLoading ? (
           <div className="flex justify-center py-6">
             <Spinner />
@@ -106,6 +187,34 @@ export function FamilyVaultPage() {
 
       <section>
         <h2 className="mb-4 font-display text-lg font-semibold text-text-primary md:text-xl">
+          <span className="handline">Shared stories</span>
+        </h2>
+        {vaultStories.isLoading ? (
+          <div className="flex justify-center py-6">
+            <Spinner />
+          </div>
+        ) : (vaultStories.data ?? []).length === 0 ? (
+          <p className="postcard rounded-[16px] p-6 text-sm text-text-secondary">
+            Stories saved for <em>Family</em> appear here — yours, and everyone whose vault
+            you belong to.
+          </p>
+        ) : (
+          <ol className="flex flex-col gap-3" data-stagger>
+            {(vaultStories.data ?? []).map((s, i) => (
+              <ScrollReveal as="li" key={s.id} variant="rise" index={i}>
+                <StoryCard
+                  story={s}
+                  variant="compact"
+                  onOpen={(story) => navigate(`/story/${story.id}`)}
+                />
+              </ScrollReveal>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-4 font-display text-lg font-semibold text-text-primary md:text-xl">
           <span className="handline">Time capsules</span>
         </h2>
         {capsules.isLoading ? (
@@ -148,6 +257,8 @@ export function FamilyVaultPage() {
           </ol>
         )}
       </section>
+
+      {toast && <Toast message={toast} kind="info" onDismiss={() => setToast(null)} />}
     </div>
   );
 }

@@ -206,18 +206,27 @@ Pattern stays Controller → Service → Repository, interface + class, thin con
 Extra in D1: story processing worker (channel queue), AiPipelineClient, rate limiting,
 security headers, LIKE search fallback, lazy story-of-the-day picker + featured notification.
 
-### Day 2 (Sep 2) — AI pipeline + payments
+### Day 2 (Sep 1, ran a day early) — AI pipeline + payments
 ```
-⬜ D2.1  services/ai scaffold (uv, FastAPI, LangGraph) + /healthz
-⬜ D2.2  Pipeline nodes: transcribe → detect → clean → moderate → translate → tag → embed
-⬜ D2.3  .NET AiPipelineClient + async processing flow + /status polling; flagged-story UX
-⬜ D2.4  StoryEmbeddings persistence + VECTOR_DISTANCE search endpoint + frontend search wiring
-⬜ D2.5  Stripe: plans, checkout session, webhook (idempotent), billing status
-⬜ D2.6  Paid gating: navigation rows for paid, preview→full logic, UpgradePage + success/cancel
-⬜ D2.7  End-to-end: voice story in Telugu → transcribed/cleaned/translated → published →
-         semantic search finds it → free viewer sees preview → test-pay → full story
-⬜ D2.8  Commit(s) + update PROJECT_MEMORY.md
+✅ D2.1  services/ai scaffold (uv + Python 3.12, FastAPI, LangGraph) + /healthz + shared-secret auth
+✅ D2.2  Pipeline: transcribe (Groq whisper-large-v3) → analyze (openai/gpt-oss-120b single structured
+         call: language/title/cleanup/excerpt/translation/tags/PII) → moderate (gpt-oss-safeguard-20b,
+         fail-closed) → embed (fastembed paraphrase-multilingual-MiniLM-L12-v2, 384-dim ONNX)
+✅ D2.3  .NET AiPipelineClient wired end-to-end; flagged-story flow verified (contact-info story flagged)
+✅ D2.4  Embeddings persisted; VECTOR_DISTANCE search verified CROSS-LINGUAL (English query found the
+         Telugu story); semantic search box added to FeaturedFeedPage
+✅ D2.5  Stripe live in test mode: product prod_VBB1GNAlVIVewP + monthly/yearly prices created via API,
+         keys + price ids + whsec in Settings; stripe CLI (~/.local/bin/stripe) forwarding webhooks;
+         full loop verified: subscription paid → webhook → UserType=paid → refresh → full nav
+✅ D2.6  UpgradePage + UpgradeSuccessPage (poll status → JWT refresh) + preview→/upgrade card;
+         VaultJoinPage + invite links UI on FamilyVaultPage (+ shared-stories section)
+✅ D2.7  End-to-end verified: Telugu text story published to community w/ translation; voice story
+         (real speech) transcribed + AI-titled + published; guest→paid upgrade loop green
+✅ D2.8  Committed + memory updated
 ```
+Notes: Groq deprecated llama-3.3 — models now openai/gpt-oss-120b + gpt-oss-safeguard-20b.
+India-registered Stripe account ⇒ export payments need customer name+address
+(BillingAddressCollection=required set; hosted Checkout collects it).
 
 ### Day 3 (Sep 3) — Mobile + ship
 ```

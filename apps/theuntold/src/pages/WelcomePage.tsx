@@ -4,27 +4,10 @@ import { ArrowRight, Feather, Quote } from 'lucide-react';
 import { WordReveal } from '../components/ui/WordReveal';
 import { Spinner } from '../components/ui/Spinner';
 import { useMagnetic } from '../hooks/useMagnetic';
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { authGoogle, authGuest } from '../api/auth.api';
 import { useAuthStore } from '../store/authStore';
 import { featuredStory, recentStoriesFixtures } from '../data/storyFixtures';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential: string }) => void;
-          }) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
 
 export function WelcomePage() {
   const navigate = useNavigate();
@@ -32,6 +15,7 @@ export function WelcomePage() {
   const deviceToken = useAuthStore((s) => s.deviceToken);
   const onboardingDone = useAuthStore((s) => s.onboardingComplete);
   const magneticRef = useMagnetic<HTMLButtonElement>(0.16);
+  const { signIn, fallbackRef } = useGoogleSignIn();
 
   const [loadingGuest, setLoadingGuest] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -58,26 +42,18 @@ export function WelcomePage() {
 
   async function handleGoogle() {
     setError(null);
-    if (!GOOGLE_CLIENT_ID || !window.google) {
-      setError('Google sign-in is not configured yet — continue as guest for now.');
-      return;
-    }
     setLoadingGoogle(true);
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async ({ credential }) => {
-        try {
-          const res = await authGoogle(credential);
-          setAuth(res);
-          navigate(nextRouteAfterAuth(), { replace: true });
-        } catch {
-          setError("That didn't work. Please try again in a moment.");
-        } finally {
-          setLoadingGoogle(false);
-        }
-      },
+    const failure = await signIn(async (credential) => {
+      try {
+        const res = await authGoogle(credential);
+        setAuth(res);
+        navigate(nextRouteAfterAuth(), { replace: true });
+      } catch {
+        setError("That didn't work. Please try again in a moment.");
+      }
     });
-    window.google.accounts.id.prompt();
+    setLoadingGoogle(false);
+    if (failure) setError(failure);
   }
 
   async function handleGuest() {
@@ -221,6 +197,8 @@ export function WelcomePage() {
                   aria-hidden
                 />
               </button>
+
+              <div ref={fallbackRef} hidden className="flex justify-center pt-1" />
 
               <p className="pt-2 text-center text-xs text-text-hint">
                 Your stories are yours. Always.

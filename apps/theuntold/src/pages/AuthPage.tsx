@@ -4,56 +4,32 @@ import { ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Logo } from '../components/ui/Logo';
 import { authGoogle, authGuest } from '../api/auth.api';
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { useAuthStore } from '../store/authStore';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential: string }) => void;
-          }) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
 
 export function AuthPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
   const deviceToken = useAuthStore((s) => s.deviceToken);
+  const { signIn, fallbackRef } = useGoogleSignIn();
   const [loadingGuest, setLoadingGuest] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleGoogle() {
     setError(null);
-    if (!GOOGLE_CLIENT_ID || !window.google) {
-      setError('Google sign-in is not configured yet. Continue as guest for now.');
-      return;
-    }
     setLoadingGoogle(true);
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async ({ credential }) => {
-        try {
-          const res = await authGoogle(credential);
-          setAuth(res);
-          navigate('/', { replace: true });
-        } catch {
-          setError("That didn't work. Please try again in a moment.");
-        } finally {
-          setLoadingGoogle(false);
-        }
-      },
+    const failure = await signIn(async (credential) => {
+      try {
+        const res = await authGoogle(credential);
+        setAuth(res);
+        navigate('/', { replace: true });
+      } catch {
+        setError("That didn't work. Please try again in a moment.");
+      }
     });
-    window.google.accounts.id.prompt();
+    setLoadingGoogle(false);
+    if (failure) setError(failure);
   }
 
   async function handleGuest() {
@@ -115,6 +91,7 @@ export function AuthPage() {
             onClick={handleGuest}
             fullWidth
           />
+          <div ref={fallbackRef} hidden className="flex justify-center pt-1" />
         </div>
 
         <div className="mt-8 flex items-center justify-center gap-2 text-xs text-text-hint">

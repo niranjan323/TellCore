@@ -61,12 +61,11 @@ public class StoryService : IStoryService
 
         if (userType != "paid")
         {
-            var limitSetting = await _settings.GetValueAsync("stories.free.storylimit", ct: ct);
-            if (int.TryParse(limitSetting, out var limit) && limit > 0)
-            {
-                var count = await _stories.CountForUserAsync(userId, ct);
-                if (count >= limit) return (null, "story_limit_reached");
-            }
+            // Free tier writes at the app's natural rhythm: one page a day.
+            var perDaySetting = await _settings.GetValueAsync("stories.free.perday", ct: ct);
+            var perDay = int.TryParse(perDaySetting, out var pd) && pd > 0 ? pd : 1;
+            var todayCount = await _stories.CountForUserSinceAsync(userId, DateTime.UtcNow.Date, ct);
+            if (todayCount >= perDay) return (null, "daily_limit_reached");
         }
 
         var story = new Story
@@ -345,6 +344,7 @@ public class StoryService : IStoryService
                 new AuthorResponse(row.UserId, authorName, null, TextUtils.Initials(authorName)),
                 row.Title ?? "Untitled story",
                 row.Excerpt ?? TextUtils.MakeExcerpt(body),
+                row.Summary,
                 body,
                 row.Kind,
                 audioUrl,

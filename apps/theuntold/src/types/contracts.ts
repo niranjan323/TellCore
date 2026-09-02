@@ -157,6 +157,7 @@ export interface Story {
   author: Author;
   title: string;
   excerpt: string;
+  summary?: string | null;
   body: string;
   kind: StoryKind;
   audioUrl: string | null;

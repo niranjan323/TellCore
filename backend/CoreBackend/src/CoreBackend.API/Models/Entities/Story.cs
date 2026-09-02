@@ -10,6 +10,7 @@ public class Story : BaseEntity
     public string? RawText { get; set; }
     public string? ContentText { get; set; }
     public string? Excerpt { get; set; }
+    public string? Summary { get; set; }
     public string? AudioUrl { get; set; }
     public string? AudioPath { get; set; }
     public int? DurationSeconds { get; set; }

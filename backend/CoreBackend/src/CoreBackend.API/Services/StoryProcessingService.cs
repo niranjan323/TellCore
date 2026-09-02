@@ -72,6 +72,7 @@ public class StoryProcessingService : IStoryProcessingService
         story.Excerpt = !string.IsNullOrWhiteSpace(result.Excerpt)
             ? result.Excerpt
             : TextUtils.MakeExcerpt(story.ContentText);
+        story.Summary = string.IsNullOrWhiteSpace(result.Summary) ? null : result.Summary.Trim();
         story.WordCount = result.WordCount > 0 ? result.WordCount : TextUtils.CountWords(story.ContentText);
 
         if (story.Visibility != "private" && !result.Moderation.Allowed)

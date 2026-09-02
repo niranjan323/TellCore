@@ -70,6 +70,7 @@ async def process_story(
         transcript=state.get("transcript"),
         cleanedText=cleaned,
         excerpt=state.get("excerpt"),
+        summary=state.get("summary"),
         translationEn=state.get("translation_en"),
         tags=state.get("tags") or [],
         moderation=Moderation(

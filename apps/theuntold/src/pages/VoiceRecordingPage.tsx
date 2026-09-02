@@ -42,12 +42,14 @@ export function VoiceRecordingPage() {
       }, 1100);
     } catch (error) {
       setSaving(false);
-      const limitHit =
-        isAxiosError(error) && error.response?.data?.error === 'story_limit_reached';
+      const code = isAxiosError(error) ? error.response?.data?.error : undefined;
       setToast({
-        message: limitHit
-          ? 'Free story limit reached — upgrade to keep recording.'
-          : 'Could not save right now — try again.',
+        message:
+          code === 'daily_limit_reached'
+            ? "You've told today's story — come back tomorrow, or go unlimited with Premium."
+            : code === 'story_limit_reached'
+              ? 'Free story limit reached — upgrade to keep recording.'
+              : 'Could not save right now — try again.',
         kind: 'error',
       });
     }

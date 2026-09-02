@@ -20,6 +20,7 @@ public interface IStoryRepository
     Task UpdateAudioAsync(Guid storyId, string audioUrl, string audioPath, int? durationSeconds, CancellationToken ct = default);
     Task SoftDeleteAsync(Guid storyId, Guid userId, CancellationToken ct = default);
     Task<int> CountForUserAsync(Guid userId, CancellationToken ct = default);
+    Task<int> CountForUserSinceAsync(Guid userId, DateTime sinceUtc, CancellationToken ct = default);
     Task<IReadOnlyList<StoryRow>> GetMineAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<StoryRow>> GetCommunityFeedAsync(Guid productId, int page, int pageSize, CancellationToken ct = default);
     Task<IReadOnlyList<StoryRow>> GetFamilyStoriesAsync(IReadOnlyList<Guid> ownerUserIds, CancellationToken ct = default);

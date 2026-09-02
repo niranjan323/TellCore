@@ -11,6 +11,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { Postmark } from '../components/ui/PaperEphemera';
 import { Toast } from '../components/ui/Toast';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { logout as apiLogout } from '../api/auth.api';
 import {
   createPortalSession,
@@ -19,7 +20,7 @@ import {
   fetchProfileStats,
   fetchStreak,
 } from '../api/stories.api';
-import { getMe, updatePrivacy } from '../api/users.api';
+import { deleteMyAccount, getMe, updatePrivacy } from '../api/users.api';
 import { useAuthStore } from '../store/authStore';
 
 const USER_TYPE_LABEL = { guest: 'Guest', registered: 'Free account', paid: 'Premium member' } as const;
@@ -32,6 +33,7 @@ export function ProfilePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const me = useQuery({ queryKey: ['me'], queryFn: getMe });
   const billing = useQuery({ queryKey: ['billing-status'], queryFn: fetchBillingStatus });
@@ -85,6 +87,18 @@ export function ProfilePage() {
     clear();
     queryClient.clear();
     navigate('/welcome', { replace: true });
+  }
+
+  async function handleDeleteAccount() {
+    setConfirmDelete(false);
+    try {
+      await deleteMyAccount();
+      useAuthStore.getState().clear();
+      queryClient.clear();
+      navigate('/welcome', { replace: true });
+    } catch {
+      setToast("Couldn't delete the account right now — try again.");
+    }
   }
 
   return (
@@ -244,18 +258,37 @@ export function ProfilePage() {
             />
           </div>
 
-          {/* Sign out */}
-          <button
-            type="button"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary disabled:opacity-50"
-          >
-            <LogOut className="h-4 w-4" aria-hidden />
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
+          {/* Sign out / delete */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary disabled:opacity-50"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              {signingOut ? 'Signing out…' : 'Sign out'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-text-hint transition-colors hover:bg-primary-light hover:text-primary-dark"
+            >
+              Delete account
+            </button>
+          </div>
         </div>
       </section>
+
+      <ConfirmationModal
+        open={confirmDelete}
+        title="Delete your account?"
+        description="This removes your account, your stories, and your vault. There is no way back."
+        confirmLabel="Delete everything"
+        destructive
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       {toast && <Toast message={toast} kind="info" onDismiss={() => setToast(null)} />}
     </div>

@@ -12,6 +12,7 @@ public record StoryResponse(
     AuthorResponse Author,
     string Title,
     string Excerpt,
+    string? Summary,
     string Body,
     string Kind,
     string? AudioUrl,

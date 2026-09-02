@@ -23,6 +23,7 @@ public abstract class AuthorizedControllerBase : ControllerBase
         "not_found" => NotFound(new { error }),
         "forbidden" => Forbid(),
         "story_limit_reached" => StatusCode(StatusCodes.Status403Forbidden, new { error, message = "Free story limit reached — upgrade to keep writing." }),
+        "daily_limit_reached" => StatusCode(StatusCodes.Status403Forbidden, new { error, message = "You've written today's page. Come back tomorrow — or go unlimited with Premium." }),
         "billing_not_configured" => StatusCode(StatusCodes.Status503ServiceUnavailable, new { error }),
         "invite_used" or "invite_expired" or "invite_own" or "already_member" => Conflict(new { error }),
         _ => BadRequest(new { error }),

@@ -15,7 +15,7 @@ public class StoryRepository : IStoryRepository
     private const string StoryColumns = @"
         s.Id, s.CreatedAt, s.UpdatedAt, s.CreatedBy, s.UpdatedBy, s.IsDeleted,
         s.UserId, s.ProductId, s.Title, s.Kind, s.OriginalLanguage, s.RawText, s.ContentText,
-        s.Excerpt, s.AudioUrl, s.AudioPath, s.DurationSeconds, s.WordCount, s.Visibility,
+        s.Excerpt, s.Summary, s.AudioUrl, s.AudioPath, s.DurationSeconds, s.WordCount, s.Visibility,
         s.Status, s.ModerationReason, s.PromptKey, s.IsFeatured, s.HeartCount, s.ViewCount, s.PublishedAt,
         u.Name AS AuthorName, u.IsProfilePublic AS AuthorIsPublic";
 
@@ -76,7 +76,7 @@ public class StoryRepository : IStoryRepository
         const string sql = @"
             UPDATE dbo.Stories
             SET Title = @Title, OriginalLanguage = @OriginalLanguage, RawText = @RawText,
-                ContentText = @ContentText, Excerpt = @Excerpt, WordCount = @WordCount,
+                ContentText = @ContentText, Excerpt = @Excerpt, Summary = @Summary, WordCount = @WordCount,
                 Visibility = @Visibility, Status = @Status, ModerationReason = @ModerationReason,
                 PublishedAt = @PublishedAt, UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @Id AND IsDeleted = 0";
@@ -110,6 +110,16 @@ public class StoryRepository : IStoryRepository
         const string sql = "SELECT COUNT(*) FROM dbo.Stories WHERE UserId = @UserId AND IsDeleted = 0";
         using var conn = _factory.CreateConnection();
         return await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { UserId = userId }, cancellationToken: ct));
+    }
+
+    public async Task<int> CountForUserSinceAsync(Guid userId, DateTime sinceUtc, CancellationToken ct = default)
+    {
+        const string sql = @"
+            SELECT COUNT(*) FROM dbo.Stories
+            WHERE UserId = @UserId AND IsDeleted = 0 AND CreatedAt >= @Since";
+        using var conn = _factory.CreateConnection();
+        return await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql,
+            new { UserId = userId, Since = sinceUtc }, cancellationToken: ct));
     }
 
     public async Task<IReadOnlyList<StoryRow>> GetMineAsync(Guid userId, CancellationToken ct = default)

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Heart, Lock, MoreHorizontal, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Heart, ImageDown, Lock, MoreHorizontal, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { ShareCardModal } from '../components/stories/ShareCardModal';
 import { StoryReader } from '../components/stories/StoryReader';
 import { Button } from '../components/ui/Button';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
@@ -20,6 +21,7 @@ export function StoryDetailPage() {
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareCardOpen, setShareCardOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [heart, setHeart] = useState<{ count: number; hearted: boolean } | null>(null);
 
@@ -156,6 +158,13 @@ export function StoryDetailPage() {
         </div>
       )}
 
+      {story.summary && !story.isPreview && (
+        <div className="mx-auto mb-8 max-w-story rounded-md border-l-4 border-accent bg-surface-secondary/70 px-5 py-4">
+          <p className="font-handwritten text-lg text-primary-dark">In short</p>
+          <p className="mt-1 text-sm leading-relaxed text-text-secondary">{story.summary}</p>
+        </div>
+      )}
+
       <StoryReader story={story} />
 
       {story.isPreview && (
@@ -195,14 +204,30 @@ export function StoryDetailPage() {
             fullWidth
           />
         )}
+        {!story.isPreview && (
+          <Button
+            label="Share as a card"
+            variant="primary"
+            leadingIcon={<ImageDown className="h-4 w-4" aria-hidden />}
+            onClick={() => setShareCardOpen(true)}
+            fullWidth
+          />
+        )}
         <Button
-          label="Share this story"
+          label="Share as text"
           variant="secondary"
           leadingIcon={<Share2 className="h-4 w-4" aria-hidden />}
           onClick={handleShare}
           fullWidth
         />
       </div>
+
+      <ShareCardModal
+        story={story}
+        open={shareCardOpen}
+        onClose={() => setShareCardOpen(false)}
+        onToast={setToast}
+      />
 
       <ConfirmationModal
         open={confirmDelete}

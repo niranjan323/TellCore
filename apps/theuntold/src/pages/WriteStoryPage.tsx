@@ -72,12 +72,14 @@ export function WriteStoryPage() {
       }, 900);
     } catch (error) {
       setSaving(false);
-      const limitHit =
-        isAxiosError(error) && error.response?.data?.error === 'story_limit_reached';
+      const code = isAxiosError(error) ? error.response?.data?.error : undefined;
       setToast({
-        message: limitHit
-          ? 'Free story limit reached — upgrade to keep writing.'
-          : 'Could not save right now. Your draft is safe — try again.',
+        message:
+          code === 'daily_limit_reached'
+            ? "You've written today's page — come back tomorrow, or go unlimited with Premium."
+            : code === 'story_limit_reached'
+              ? 'Free story limit reached — upgrade to keep writing.'
+              : 'Could not save right now. Your draft is safe — try again.',
         kind: 'error',
       });
     }

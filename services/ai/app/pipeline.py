@@ -40,6 +40,9 @@ Return STRICT JSON — no markdown, no commentary — with exactly these keys:
   transcription artifacts, add paragraph breaks. PRESERVE the writer's own voice and
   words — do not rewrite, embellish, shorten, or add anything.
 - "excerpt": a 1-2 sentence teaser in the story's own language, max 200 characters.
+- "summary": for stories longer than ~120 words, a warm 2-3 sentence summary in the
+  story's own language (max 500 characters) capturing what happens and why it matters;
+  null for short stories.
 - "translationEn": a faithful English translation of cleanedText, or null if the story
   is already in English.
 - "tags": up to 4 lowercase tags, chosen from: childhood, family, love, lesson, regret,
@@ -59,6 +62,7 @@ class PipelineState(TypedDict, total=False):
     title: str | None
     cleaned_text: str
     excerpt: str | None
+    summary: str | None
     translation_en: str | None
     tags: list[str]
     contains_contact_info: bool
@@ -127,6 +131,7 @@ def _analyze(state: PipelineState) -> PipelineState:
         "title": (data.get("title") or hint or None),
         "cleaned_text": cleaned,
         "excerpt": data.get("excerpt"),
+        "summary": data.get("summary") if isinstance(data.get("summary"), str) else None,
         "translation_en": translation.strip() if isinstance(translation, str) and translation.strip() else None,
         "tags": [t.lower() for t in tags][:4],
         "contains_contact_info": bool(data.get("containsContactInfo")),

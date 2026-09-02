@@ -21,6 +21,7 @@ class ProcessStoryResponse(BaseModel):
     transcript: str | None = None
     cleanedText: str
     excerpt: str | None = None
+    summary: str | None = None
     translationEn: str | None = None
     tags: list[str] = []
     moderation: Moderation = Moderation()

@@ -11,6 +11,7 @@ public class AiPipelineResult
     public string? Transcript { get; set; }
     public string CleanedText { get; set; } = string.Empty;
     public string? Excerpt { get; set; }
+    public string? Summary { get; set; }
     public string? TranslationEn { get; set; }
     public List<string> Tags { get; set; } = new();
     public AiModerationResult Moderation { get; set; } = new();

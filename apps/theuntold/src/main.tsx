@@ -16,6 +16,15 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
+// Android 16 forces edge-to-edge drawing; this plugin pushes the WebView
+// inside the system bars and tints them (light grey-beige, dark icons).
+if (Capacitor.getPlatform() === 'android') {
+  void import('@capawesome/capacitor-android-edge-to-edge-support').then(({ EdgeToEdge }) => {
+    void EdgeToEdge.enable().catch(() => undefined);
+    void EdgeToEdge.setBackgroundColor({ color: '#f5f0e8' }).catch(() => undefined);
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

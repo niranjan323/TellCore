@@ -250,6 +250,79 @@ public class StoryService : IStoryService
         return new HeartResponse(refreshed?.HeartCount ?? story.HeartCount, hearted);
     }
 
+    public async Task<FavouriteResponse?> ToggleFavouriteAsync(Guid userId, Guid storyId, CancellationToken ct = default)
+    {
+        var story = await _stories.GetByIdAsync(storyId, ct);
+        if (story is null) return null;
+        var favourited = await _stories.ToggleFavouriteAsync(storyId, userId, ct);
+        return new FavouriteResponse(favourited);
+    }
+
+    public async Task<IReadOnlyList<StoryResponse>> GetLikedAsync(Guid userId, string userType, CancellationToken ct = default)
+    {
+        var rows = await _stories.GetHeartedByUserAsync(userId, ct);
+        return await MapManyAsync(rows, userId, userType == "paid", ct);
+    }
+
+    public async Task<IReadOnlyList<StoryResponse>> GetFavouritesAsync(Guid userId, string userType, CancellationToken ct = default)
+    {
+        var rows = await _stories.GetFavouritedByUserAsync(userId, ct);
+        return await MapManyAsync(rows, userId, userType == "paid", ct);
+    }
+
+    public async Task<(StoryTranslationResponse? Result, string? Error)> GetTranslationAsync(
+        Guid viewerId, string viewerType, Guid storyId, string languageCode, CancellationToken ct = default)
+    {
+        languageCode = languageCode.Trim().ToLowerInvariant();
+        if (languageCode.Length is < 2 or > 10) return (null, "invalid_language");
+
+        // Same visibility rules as reading the story itself.
+        var (mapped, error) = await GetByIdAsync(viewerId, viewerType, storyId, ct);
+        if (mapped is null) return (null, error ?? "not_found");
+
+        if (string.Equals(mapped.OriginalLanguage ?? "en", languageCode, StringComparison.OrdinalIgnoreCase))
+            return (new StoryTranslationResponse(storyId, languageCode, mapped.Title, mapped.Body, mapped.IsPreview, false), null);
+
+        string? title;
+        string body;
+        var cached = await _stories.GetTranslationAsync(storyId, languageCode, ct);
+        if (cached is not null)
+        {
+            title = cached.Title;
+            body = cached.ContentText;
+        }
+        else
+        {
+            var row = await _stories.GetByIdAsync(storyId, ct);
+            var source = row?.ContentText ?? row?.RawText;
+            if (row is null || string.IsNullOrWhiteSpace(source)) return (null, "translation_unavailable");
+
+            var result = await _aiClient.TranslateAsync(source, row.Title, languageCode, ct);
+            if (result is null || string.IsNullOrWhiteSpace(result.Text)) return (null, "translation_unavailable");
+
+            title = result.Title ?? row.Title;
+            body = result.Text.Trim();
+            await _stories.UpsertTranslationAsync(new StoryTranslation
+            {
+                StoryId = storyId,
+                LanguageCode = languageCode,
+                Title = title,
+                ContentText = body,
+                Excerpt = TextUtils.MakeExcerpt(body),
+                IsAiGenerated = true,
+            }, ct);
+        }
+
+        if (mapped.IsPreview)
+        {
+            var previewCharsSetting = await _settings.GetValueAsync("stories.preview.chars", ct: ct);
+            var previewChars = int.TryParse(previewCharsSetting, out var pc) && pc > 0 ? pc : 600;
+            if (body.Length > previewChars) body = TextUtils.TruncateAtWord(body, previewChars);
+        }
+
+        return (new StoryTranslationResponse(storyId, languageCode, title, body, mapped.IsPreview, true), null);
+    }
+
     public async Task<StoryListResponse> GetCommunityFeedAsync(string productSlug, Guid viewerId, string viewerType, int page, int pageSize, CancellationToken ct = default)
     {
         var product = await _products.GetBySlugAsync(productSlug, ct);
@@ -339,8 +412,11 @@ public class StoryService : IStoryService
         var ids = rows.Select(r => r.Id).ToList();
         var tagsByStory = await _stories.GetTagsAsync(ids, ct);
         var hearted = viewerId == Guid.Empty
-            ? new HashSet<Guid>()
+            ? (IReadOnlySet<Guid>)new HashSet<Guid>()
             : await _stories.GetHeartedStoryIdsAsync(ids, viewerId, ct);
+        var favourited = viewerId == Guid.Empty
+            ? (IReadOnlySet<Guid>)new HashSet<Guid>()
+            : await _stories.GetFavouritedStoryIdsAsync(ids, viewerId, ct);
 
         var previewCharsSetting = await _settings.GetValueAsync("stories.preview.chars", ct: ct);
         var previewChars = int.TryParse(previewCharsSetting, out var pc) && pc > 0 ? pc : 600;
@@ -393,7 +469,8 @@ public class StoryService : IStoryService
                 row.OriginalLanguage,
                 isPreview,
                 isMine,
-                hearted.Contains(row.Id));
+                hearted.Contains(row.Id),
+                favourited.Contains(row.Id));
         }).ToList();
     }
 }

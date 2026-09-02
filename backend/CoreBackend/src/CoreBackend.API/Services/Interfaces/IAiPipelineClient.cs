@@ -14,4 +14,6 @@ public interface IAiPipelineClient
         CancellationToken ct = default);
 
     Task<float[]?> EmbedQueryAsync(string query, CancellationToken ct = default);
+
+    Task<AiTranslateResult?> TranslateAsync(string text, string? title, string targetLanguage, CancellationToken ct = default);
 }

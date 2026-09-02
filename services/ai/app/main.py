@@ -16,6 +16,8 @@ from .schemas import (
     EmbedQueryResponse,
     Moderation,
     ProcessStoryResponse,
+    TranslateRequest,
+    TranslateResponse,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -89,3 +91,15 @@ def embed_query(request: EmbedQueryRequest) -> EmbedQueryResponse:
     if not query:
         raise HTTPException(status_code=400, detail="query is required")
     return EmbedQueryResponse(embedding=embed_texts([query])[0])
+
+
+@app.post("/v1/translate", response_model=TranslateResponse,
+          dependencies=[Depends(require_internal_secret)])
+def translate(request: TranslateRequest) -> TranslateResponse:
+    from .pipeline import translate_story
+
+    text = request.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+    result = translate_story(text, request.title, request.targetLanguage)
+    return TranslateResponse(title=result.get("title"), text=result["text"])

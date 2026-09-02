@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AuthPage } from './pages/AuthPage';
@@ -26,6 +26,16 @@ import { useAuthStore } from './store/authStore';
 
 function Shell({ children }: { children: ReactNode }) {
   return <AppShell>{children}</AppShell>;
+}
+
+/** React Router keeps the old scroll position between pages — a story opened
+ * from a scrolled feed would start mid-page. Reset to top on navigation. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -94,6 +104,7 @@ export default function App() {
 
   return (
     <>
+    <ScrollToTop />
     <PendingInviteRedirect />
     <Routes>
       <Route path="/welcome" element={<Navigate to="/" replace />} />

@@ -86,6 +86,37 @@ public class AiPipelineClient : IAiPipelineClient
         }
     }
 
+    public async Task<AiTranslateResult?> TranslateAsync(string text, string? title, string targetLanguage, CancellationToken ct = default)
+    {
+        try
+        {
+            var (baseUrl, secret) = await GetConfigAsync(ct);
+            if (baseUrl is null) return null;
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl.TrimEnd('/')}/v1/translate")
+            {
+                Content = new StringContent(
+                    JsonSerializer.Serialize(new { text, title, targetLanguage }),
+                    System.Text.Encoding.UTF8, "application/json"),
+            };
+            if (secret is not null) request.Headers.Add("X-Internal-Secret", secret);
+
+            using var response = await _http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("AI pipeline translate returned {Status}", response.StatusCode);
+                return null;
+            }
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            return await JsonSerializer.DeserializeAsync<AiTranslateResult>(stream, JsonOpts, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "AI pipeline unavailable for translate");
+            return null;
+        }
+    }
+
     private async Task<(string? BaseUrl, string? Secret)> GetConfigAsync(CancellationToken ct)
     {
         var baseUrl = await _settings.GetValueAsync("ai.pipeline.url", ct: ct);

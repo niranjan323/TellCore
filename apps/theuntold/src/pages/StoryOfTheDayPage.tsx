@@ -1,22 +1,40 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Share2, Sparkles } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { Toast } from '../components/ui/Toast';
-import { fetchFeaturedStory, fetchStoryById } from '../api/stories.api';
+import {
+  fetchFeaturedStory,
+  fetchStoryById,
+  toggleStoryFavourite,
+} from '../api/stories.api';
 
 export function StoryOfTheDayPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { storyId } = useParams<{ storyId?: string }>();
   const [toast, setToast] = useState<string | null>(null);
+  const [fav, setFav] = useState<boolean | null>(null);
 
   const { data: story, isLoading } = useQuery({
     queryKey: ['featured-detail', storyId ?? 'today'],
     queryFn: () => (storyId ? fetchStoryById(storyId) : fetchFeaturedStory()),
   });
+
+  async function handleFavourite() {
+    if (!story) return;
+    try {
+      const result = await toggleStoryFavourite(story.id);
+      setFav(result.hasFavourited);
+      await queryClient.invalidateQueries({ queryKey: ['favourite-stories'] });
+      setToast(result.hasFavourited ? 'Saved — find it under My Stories → Saved' : 'Removed from saved');
+    } catch {
+      setToast("Couldn't save right now — try again.");
+    }
+  }
 
   async function handleShare() {
     if (!story) return;
@@ -67,7 +85,9 @@ export function StoryOfTheDayPage() {
         Back
       </button>
 
-      <article className="mx-auto -mt-24 max-w-story px-4 pb-16 md:px-0">
+      {/* relative z-10: the hero's absolutely-positioned texture layers would
+          otherwise paint over this card and hide the top of the title. */}
+      <article className="relative z-10 mx-auto -mt-24 max-w-story px-4 pb-16 md:px-0">
         <div className="rounded-lg border bg-surface p-6 shadow-sm md:p-10">
           <span className="inline-flex items-center gap-1 rounded-full bg-accent/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-dark">
             <Sparkles className="h-3 w-3" aria-hidden />
@@ -101,10 +121,15 @@ export function StoryOfTheDayPage() {
 
           <div className="mt-10 grid gap-2 md:grid-cols-2">
             <Button
-              label="Save to favourites"
+              label={(fav ?? story.hasFavourited) ? 'Saved to favourites' : 'Save to favourites'}
               variant="secondary"
-              leadingIcon={<Bookmark className="h-4 w-4" aria-hidden />}
-              onClick={() => setToast('Saved to your favourites')}
+              leadingIcon={
+                <Bookmark
+                  className={`h-4 w-4 ${(fav ?? story.hasFavourited) ? 'fill-current text-primary' : ''}`}
+                  aria-hidden
+                />
+              }
+              onClick={handleFavourite}
               fullWidth
             />
             <Button

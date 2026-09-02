@@ -30,7 +30,8 @@ public record StoryResponse(
     string? OriginalLanguage,
     bool IsPreview,
     bool IsMine,
-    bool HasHearted);
+    bool HasHearted,
+    bool HasFavourited);
 
 public record StoryListResponse(IReadOnlyList<StoryResponse> Stories, int Page, int PageSize, bool HasMore);
 
@@ -41,3 +42,13 @@ public record StoryStatusResponse(Guid StoryId, string Status, string? Moderatio
 public record StoryVoiceUploadResponse(string AudioUrl, int? DurationSeconds);
 
 public record HeartResponse(int HeartCount, bool HasHearted);
+
+public record FavouriteResponse(bool HasFavourited);
+
+public record StoryTranslationResponse(
+    Guid StoryId,
+    string LanguageCode,
+    string? Title,
+    string Body,
+    bool IsPreview,
+    bool IsAiGenerated);

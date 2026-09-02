@@ -167,6 +167,32 @@ export async function recordStoryView(storyId: string): Promise<void> {
   }
 }
 
+export async function fetchLikedStories(): Promise<Story[]> {
+  const { data } = await apiClient.get<Story[]>('/stories/liked');
+  return data.map(normalizeStory);
+}
+
+export async function fetchFavouriteStories(): Promise<Story[]> {
+  const { data } = await apiClient.get<Story[]>('/stories/favourites');
+  return data.map(normalizeStory);
+}
+
+export async function toggleStoryFavourite(storyId: string): Promise<{ hasFavourited: boolean }> {
+  const { data } = await apiClient.post<{ hasFavourited: boolean }>(`/stories/${storyId}/favourite`);
+  return data;
+}
+
+export async function fetchStoryTranslation(
+  storyId: string,
+  lang: string,
+): Promise<import('../types/contracts').StoryTranslation> {
+  const { data } = await apiClient.get<import('../types/contracts').StoryTranslation>(
+    `/stories/${storyId}/translation`,
+    { params: { lang } },
+  );
+  return data;
+}
+
 export async function reportStory(
   storyId: string,
   reason: string,

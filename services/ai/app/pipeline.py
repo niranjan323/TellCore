@@ -215,6 +215,33 @@ def _embed(state: PipelineState) -> PipelineState:
     }
 
 
+def translate_story(text: str, title: str | None, target_language: str) -> dict:
+    """Faithful translation of a story (and its title) into the target language."""
+    settings = get_settings()
+    llm = ChatGroq(
+        api_key=settings.groq_api_key,
+        model=settings.groq_model,
+        temperature=0.2,
+        model_kwargs={"response_format": {"type": "json_object"}},
+    )
+    system = (
+        "You translate personal life stories faithfully — keep the writer's voice, tone, "
+        "names, and paragraph breaks. Return STRICT JSON with keys \"title\" (translated "
+        "title, or null if no title given) and \"text\" (the translated story)."
+    )
+    user = (
+        f"Target language ISO 639-1 code: {target_language}\n"
+        + (f"Title: {title}\n" if title else "")
+        + f"Story:\n{text[:12000]}"
+    )
+    raw = llm.invoke([SystemMessage(content=system), HumanMessage(content=user)]).content
+    data = json.loads(raw if isinstance(raw, str) else str(raw))
+    translated = (data.get("text") or "").strip()
+    if not translated:
+        raise ValueError("empty translation")
+    return {"title": data.get("title"), "text": translated}
+
+
 def build_graph():
     graph = StateGraph(PipelineState)
     graph.add_node("transcribe", _transcribe)

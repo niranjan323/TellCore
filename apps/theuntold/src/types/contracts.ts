@@ -177,6 +177,16 @@ export interface Story {
   isPreview?: boolean;
   isMine?: boolean;
   hasHearted?: boolean;
+  hasFavourited?: boolean;
+}
+
+export interface StoryTranslation {
+  storyId: string;
+  languageCode: string;
+  title: string | null;
+  body: string;
+  isPreview: boolean;
+  isAiGenerated: boolean;
 }
 
 export interface CreateStoryInput {

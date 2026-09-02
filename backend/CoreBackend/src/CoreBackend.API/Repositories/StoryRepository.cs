@@ -371,6 +371,72 @@ public class StoryRepository : IStoryRepository
         return rows.ToHashSet();
     }
 
+    public async Task<bool> ToggleFavouriteAsync(Guid storyId, Guid userId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            DECLARE @existing UNIQUEIDENTIFIER = (
+                SELECT TOP 1 Id FROM dbo.StoryFavourites
+                WHERE StoryId = @StoryId AND UserId = @UserId AND IsDeleted = 0);
+            IF @existing IS NULL
+            BEGIN
+                INSERT INTO dbo.StoryFavourites (StoryId, UserId, CreatedBy) VALUES (@StoryId, @UserId, @UserId);
+                SELECT CAST(1 AS BIT);
+            END
+            ELSE
+            BEGIN
+                UPDATE dbo.StoryFavourites SET IsDeleted = 1, UpdatedAt = SYSUTCDATETIME(), UpdatedBy = @UserId
+                WHERE Id = @existing;
+                SELECT CAST(0 AS BIT);
+            END";
+        using var conn = _factory.CreateConnection();
+        return await conn.ExecuteScalarAsync<bool>(new CommandDefinition(sql,
+            new { StoryId = storyId, UserId = userId }, cancellationToken: ct));
+    }
+
+    public async Task<IReadOnlySet<Guid>> GetFavouritedStoryIdsAsync(IEnumerable<Guid> storyIds, Guid userId, CancellationToken ct = default)
+    {
+        var ids = storyIds.Distinct().ToList();
+        if (ids.Count == 0) return new HashSet<Guid>();
+        const string sql = @"
+            SELECT StoryId FROM dbo.StoryFavourites
+            WHERE StoryId IN @Ids AND UserId = @UserId AND IsDeleted = 0";
+        using var conn = _factory.CreateConnection();
+        var rows = await conn.QueryAsync<Guid>(new CommandDefinition(sql, new { Ids = ids, UserId = userId }, cancellationToken: ct));
+        return rows.ToHashSet();
+    }
+
+    public Task<IReadOnlyList<StoryRow>> GetHeartedByUserAsync(Guid userId, CancellationToken ct = default)
+        => GetMarkedByUserAsync("dbo.StoryHearts", userId, ct);
+
+    public Task<IReadOnlyList<StoryRow>> GetFavouritedByUserAsync(Guid userId, CancellationToken ct = default)
+        => GetMarkedByUserAsync("dbo.StoryFavourites", userId, ct);
+
+    private async Task<IReadOnlyList<StoryRow>> GetMarkedByUserAsync(string markTable, Guid userId, CancellationToken ct)
+    {
+        // Only stories the user can still see: live community stories or their own.
+        var sql = $@"
+            SELECT {StoryColumns} {StoryFrom}
+            INNER JOIN {markTable} m ON m.StoryId = s.Id AND m.UserId = @UserId AND m.IsDeleted = 0
+            WHERE s.IsDeleted = 0
+              AND ((s.Visibility = 'community' AND s.Status = 'published') OR s.UserId = @UserId)
+            ORDER BY m.CreatedAt DESC";
+        using var conn = _factory.CreateConnection();
+        var rows = await conn.QueryAsync<StoryRow>(new CommandDefinition(sql, new { UserId = userId }, cancellationToken: ct));
+        return rows.AsList();
+    }
+
+    public async Task<StoryTranslation?> GetTranslationAsync(Guid storyId, string languageCode, CancellationToken ct = default)
+    {
+        const string sql = @"
+            SELECT TOP 1 Id, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, IsDeleted,
+                   StoryId, LanguageCode, Title, ContentText, Excerpt, IsAiGenerated
+            FROM dbo.StoryTranslations
+            WHERE StoryId = @StoryId AND LanguageCode = @Lang AND IsDeleted = 0";
+        using var conn = _factory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<StoryTranslation>(new CommandDefinition(sql,
+            new { StoryId = storyId, Lang = languageCode }, cancellationToken: ct));
+    }
+
     public async Task<StoryRow?> GetFeaturedForDateAsync(Guid productId, DateTime dateUtc, CancellationToken ct = default)
     {
         var sql = $@"

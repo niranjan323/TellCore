@@ -35,3 +35,14 @@ class EmbedQueryRequest(BaseModel):
 
 class EmbedQueryResponse(BaseModel):
     embedding: list[float]
+
+
+class TranslateRequest(BaseModel):
+    text: str
+    title: str | None = None
+    targetLanguage: str
+
+
+class TranslateResponse(BaseModel):
+    title: str | None = None
+    text: str

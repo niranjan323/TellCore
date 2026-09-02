@@ -1,24 +1,48 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Grid3X3, List, PenLine, Search } from 'lucide-react';
+import { Bookmark, Grid3X3, Heart, List, PenLine, Search } from 'lucide-react';
 import { StoryCard } from '../components/stories/StoryCard';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { Spinner } from '../components/ui/Spinner';
 import { StatCounter } from '../components/ui/StatCounter';
-import { fetchMyStories } from '../api/stories.api';
+import { fetchFavouriteStories, fetchLikedStories, fetchMyStories } from '../api/stories.api';
 import type { Story } from '../types/contracts';
 
 const TAG_FILTERS = ['all', 'family', 'childhood', 'love', 'lesson', 'joy', 'regret'];
+
+type Shelf = 'mine' | 'liked' | 'saved';
+
+const SHELVES: { key: Shelf; label: string }[] = [
+  { key: 'mine', label: 'My pages' },
+  { key: 'liked', label: 'Liked' },
+  { key: 'saved', label: 'Saved' },
+];
+
+const SHELF_FETCHERS: Record<Shelf, () => Promise<Story[]>> = {
+  mine: fetchMyStories,
+  liked: fetchLikedStories,
+  saved: fetchFavouriteStories,
+};
+
+const SHELF_QUERY_KEYS: Record<Shelf, string> = {
+  mine: 'my-stories',
+  liked: 'liked-stories',
+  saved: 'favourite-stories',
+};
 
 export function MyStoriesPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<string>('all');
   const [view, setView] = useState<'grid' | 'list'>('list');
+  const [shelf, setShelf] = useState<Shelf>('mine');
 
-  const { data, isLoading } = useQuery({ queryKey: ['my-stories'], queryFn: fetchMyStories });
+  const { data, isLoading } = useQuery({
+    queryKey: [SHELF_QUERY_KEYS[shelf]],
+    queryFn: SHELF_FETCHERS[shelf],
+  });
 
   const filtered: Story[] = useMemo(() => {
     const raw = data ?? [];
@@ -43,11 +67,29 @@ export function MyStoriesPage() {
           <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight tracking-tight text-text-primary md:text-[44px]">
             My stories
           </h1>
-          {totalCount > 0 && (
+          {shelf === 'mine' && totalCount > 0 && (
             <p className="mt-2 text-sm text-text-secondary">
               <StatCounter value={totalCount} className="font-semibold text-text-primary" /> pages so far. A few more, and a generation will remember you.
             </p>
           )}
+          <div className="mt-4 inline-flex gap-1 rounded-full border border-border bg-surface p-1">
+            {SHELVES.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setShelf(s.key)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                  shelf === s.key
+                    ? 'bg-primary text-surface'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {s.key === 'liked' && <Heart className="h-3.5 w-3.5" aria-hidden />}
+                {s.key === 'saved' && <Bookmark className="h-3.5 w-3.5" aria-hidden />}
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="hidden gap-1 rounded-md bg-surface-secondary p-1 md:inline-flex">
           <ViewToggleButton
@@ -99,13 +141,31 @@ export function MyStoriesPage() {
           <Spinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState
-          illustration={<PenLine className="h-12 w-12" aria-hidden />}
-          title="No stories yet"
-          description="Your first story will appear here. Five minutes is enough."
-          ctaLabel="Write your first story"
-          onCta={() => navigate('/today')}
-        />
+        shelf === 'mine' ? (
+          <EmptyState
+            illustration={<PenLine className="h-12 w-12" aria-hidden />}
+            title="No stories yet"
+            description="Your first story will appear here. Five minutes is enough."
+            ctaLabel="Write your first story"
+            onCta={() => navigate('/today')}
+          />
+        ) : (
+          <EmptyState
+            illustration={
+              shelf === 'liked'
+                ? <Heart className="h-12 w-12" aria-hidden />
+                : <Bookmark className="h-12 w-12" aria-hidden />
+            }
+            title={shelf === 'liked' ? 'No liked stories yet' : 'Nothing saved yet'}
+            description={
+              shelf === 'liked'
+                ? 'Stories you hold close will gather here.'
+                : 'Save stories you want to return to — they wait for you here.'
+            }
+            ctaLabel="Browse featured stories"
+            onCta={() => navigate('/featured')}
+          />
+        )
       ) : view === 'list' ? (
         <ol className="flex flex-col gap-3" data-stagger>
           {filtered.map((s, i) => (

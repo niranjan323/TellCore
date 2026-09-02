@@ -22,6 +22,11 @@ public interface IStoryService
     /// <summary>Error codes: not_found, report_own, invalid_reason, already_reported.</summary>
     Task<string?> ReportAsync(Guid userId, Guid storyId, string reason, string? details, CancellationToken ct = default);
     Task<HeartResponse?> ToggleHeartAsync(Guid userId, Guid storyId, CancellationToken ct = default);
+    Task<FavouriteResponse?> ToggleFavouriteAsync(Guid userId, Guid storyId, CancellationToken ct = default);
+    Task<IReadOnlyList<StoryResponse>> GetLikedAsync(Guid userId, string userType, CancellationToken ct = default);
+    Task<IReadOnlyList<StoryResponse>> GetFavouritesAsync(Guid userId, string userType, CancellationToken ct = default);
+    /// <summary>Error codes: not_found, invalid_language, translation_unavailable.</summary>
+    Task<(StoryTranslationResponse? Result, string? Error)> GetTranslationAsync(Guid viewerId, string viewerType, Guid storyId, string languageCode, CancellationToken ct = default);
     Task<StoryListResponse> GetCommunityFeedAsync(string productSlug, Guid viewerId, string viewerType, int page, int pageSize, CancellationToken ct = default);
     Task<StoryResponse?> GetStoryOfTheDayAsync(string productSlug, Guid viewerId, string viewerType, CancellationToken ct = default);
     Task<IReadOnlyList<StoryResponse>> SearchAsync(string productSlug, Guid viewerId, string viewerType, string query, CancellationToken ct = default);

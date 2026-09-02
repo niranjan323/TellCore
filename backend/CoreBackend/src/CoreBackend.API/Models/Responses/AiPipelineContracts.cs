@@ -36,3 +36,9 @@ public class AiEmbedQueryResult
 {
     public float[] Embedding { get; set; } = Array.Empty<float>();
 }
+
+public class AiTranslateResult
+{
+    public string? Title { get; set; }
+    public string Text { get; set; } = string.Empty;
+}

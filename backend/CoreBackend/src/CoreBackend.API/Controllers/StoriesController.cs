@@ -53,6 +53,14 @@ public class StoriesController : AuthorizedControllerBase
     public async Task<ActionResult<IReadOnlyList<StoryResponse>>> GetMine(CancellationToken ct)
         => Ok(await _stories.GetMineAsync(GetUserId(), ct));
 
+    [HttpGet("liked")]
+    public async Task<ActionResult<IReadOnlyList<StoryResponse>>> GetLiked(CancellationToken ct)
+        => Ok(await _stories.GetLikedAsync(GetUserId(), GetUserType(), ct));
+
+    [HttpGet("favourites")]
+    public async Task<ActionResult<IReadOnlyList<StoryResponse>>> GetFavourites(CancellationToken ct)
+        => Ok(await _stories.GetFavouritesAsync(GetUserId(), GetUserType(), ct));
+
     [HttpGet("search")]
     public async Task<ActionResult<IReadOnlyList<StoryResponse>>> Search(
         [FromQuery] string q, [FromQuery] string productSlug = "theuntold", CancellationToken ct = default)
@@ -101,5 +109,25 @@ public class StoriesController : AuthorizedControllerBase
     {
         var result = await _stories.ToggleHeartAsync(GetUserId(), id, ct);
         return result is null ? NotFound(new { error = "not_found" }) : Ok(result);
+    }
+
+    [HttpPost("{id:guid}/favourite")]
+    public async Task<ActionResult<FavouriteResponse>> ToggleFavourite(Guid id, CancellationToken ct)
+    {
+        var result = await _stories.ToggleFavouriteAsync(GetUserId(), id, ct);
+        return result is null ? NotFound(new { error = "not_found" }) : Ok(result);
+    }
+
+    [HttpGet("{id:guid}/translation")]
+    public async Task<ActionResult<StoryTranslationResponse>> GetTranslation(
+        Guid id, [FromQuery] string lang, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(lang)) return BadRequest(new { error = "invalid_language" });
+        var (result, error) = await _stories.GetTranslationAsync(GetUserId(), GetUserType(), id, lang, ct);
+        return error is null ? Ok(result) : error switch
+        {
+            "translation_unavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, new { error }),
+            _ => ErrorResult(error),
+        };
     }
 }

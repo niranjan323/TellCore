@@ -39,6 +39,11 @@ public interface IStoryRepository
     Task<int> CountDistinctReportsAsync(Guid storyId, CancellationToken ct = default);
     Task<bool> ToggleHeartAsync(Guid storyId, Guid userId, CancellationToken ct = default);
     Task<IReadOnlySet<Guid>> GetHeartedStoryIdsAsync(IEnumerable<Guid> storyIds, Guid userId, CancellationToken ct = default);
+    Task<bool> ToggleFavouriteAsync(Guid storyId, Guid userId, CancellationToken ct = default);
+    Task<IReadOnlySet<Guid>> GetFavouritedStoryIdsAsync(IEnumerable<Guid> storyIds, Guid userId, CancellationToken ct = default);
+    Task<IReadOnlyList<StoryRow>> GetHeartedByUserAsync(Guid userId, CancellationToken ct = default);
+    Task<IReadOnlyList<StoryRow>> GetFavouritedByUserAsync(Guid userId, CancellationToken ct = default);
+    Task<StoryTranslation?> GetTranslationAsync(Guid storyId, string languageCode, CancellationToken ct = default);
 
     Task<StoryRow?> GetFeaturedForDateAsync(Guid productId, DateTime dateUtc, CancellationToken ct = default);
     Task<StoryRow?> PickCommunityStoryForFeatureAsync(Guid productId, CancellationToken ct = default);

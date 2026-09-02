@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Flag, Heart, ImageDown, Lock, MoreHorizontal, PenLine, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Flag, Heart, ImageDown, Languages, Lock, MoreHorizontal, PenLine, Share2, Sparkles, Square, Trash2, Volume2 } from 'lucide-react';
 import { ReportStoryModal } from '../components/stories/ReportStoryModal';
 import { ShareCardModal } from '../components/stories/ShareCardModal';
 import { StoryReader } from '../components/stories/StoryReader';
@@ -12,9 +12,29 @@ import { Toast } from '../components/ui/Toast';
 import {
   deleteStory,
   fetchStoryById,
+  fetchStoryTranslation,
   recordStoryView,
+  toggleStoryFavourite,
   toggleStoryHeart,
 } from '../api/stories.api';
+import { useSpeech } from '../hooks/useSpeech';
+import type { StoryTranslation } from '../types/contracts';
+
+const READ_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'te', label: 'తెలుగు' },
+  { code: 'ta', label: 'தமிழ்' },
+  { code: 'kn', label: 'ಕನ್ನಡ' },
+  { code: 'ml', label: 'മലയാളം' },
+  { code: 'bn', label: 'বাংলা' },
+  { code: 'mr', label: 'मराठी' },
+  { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'pt', label: 'Português' },
+  { code: 'ar', label: 'العربية' },
+];
 
 export function StoryDetailPage() {
   const { storyId } = useParams<{ storyId: string }>();
@@ -26,6 +46,10 @@ export function StoryDetailPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [heart, setHeart] = useState<{ count: number; hearted: boolean } | null>(null);
+  const [fav, setFav] = useState<boolean | null>(null);
+  const [translation, setTranslation] = useState<StoryTranslation | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const { supported: speechSupported, speaking, speak, stop: stopSpeaking } = useSpeech();
 
   const { data: story, isLoading } = useQuery({
     queryKey: ['story', storyId],
@@ -46,6 +70,45 @@ export function StoryDetailPage() {
     } catch {
       setToast("Couldn't do that right now");
     }
+  }
+
+  async function handleFavourite() {
+    if (!story) return;
+    try {
+      const result = await toggleStoryFavourite(story.id);
+      setFav(result.hasFavourited);
+      await queryClient.invalidateQueries({ queryKey: ['favourite-stories'] });
+      setToast(result.hasFavourited ? 'Saved — find it under My Stories → Saved' : 'Removed from saved');
+    } catch {
+      setToast("Couldn't do that right now");
+    }
+  }
+
+  async function handleLanguageChange(code: string) {
+    if (!story) return;
+    stopSpeaking();
+    if (!code || code === (story.originalLanguage ?? 'original')) {
+      setTranslation(null);
+      return;
+    }
+    setTranslating(true);
+    try {
+      setTranslation(await fetchStoryTranslation(story.id, code));
+    } catch {
+      setToast("Translation isn't available right now — try again in a moment.");
+    } finally {
+      setTranslating(false);
+    }
+  }
+
+  function handleListen() {
+    if (!story) return;
+    if (speaking) {
+      stopSpeaking();
+      return;
+    }
+    const text = `${translation?.title ?? story.title}. ${translation?.body ?? story.body}`;
+    speak(text, translation?.languageCode ?? story.originalLanguage);
   }
 
   async function handleDelete() {
@@ -180,14 +243,56 @@ export function StoryDetailPage() {
         </div>
       )}
 
-      {story.summary && !story.isPreview && (
+      {story.summary && !story.isPreview && !translation && (
         <div className="mx-auto mb-8 max-w-story rounded-md border-l-4 border-accent bg-surface-secondary/70 px-5 py-4">
           <p className="font-handwritten text-lg text-primary-dark">In short</p>
           <p className="mt-1 text-sm leading-relaxed text-text-secondary">{story.summary}</p>
         </div>
       )}
 
-      <StoryReader story={story} />
+      {/* Read in another language */}
+      <div className="mx-auto mb-6 flex max-w-story flex-wrap items-center gap-2">
+        <label className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-text-secondary">
+          <Languages className="h-4 w-4 text-primary" aria-hidden />
+          <span className="sr-only">Read this story in</span>
+          <select
+            value={translation?.languageCode ?? story.originalLanguage ?? 'original'}
+            onChange={(e) => void handleLanguageChange(e.target.value)}
+            className="bg-transparent text-sm text-text-primary outline-none"
+            aria-label="Read this story in another language"
+          >
+            <option value={story.originalLanguage ?? 'original'}>
+              Original{story.originalLanguage ? ` (${story.originalLanguage})` : ''}
+            </option>
+            {READ_LANGUAGES.filter((l) => l.code !== (story.originalLanguage ?? 'en')).map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {translating && <Spinner size="sm" />}
+        {translation && (
+          <span className="text-xs text-text-hint">
+            Translated by AI ·{' '}
+            <button
+              type="button"
+              onClick={() => void handleLanguageChange(story.originalLanguage ?? 'original')}
+              className="underline underline-offset-2 hover:text-text-primary"
+            >
+              Show original
+            </button>
+          </span>
+        )}
+      </div>
+
+      <StoryReader
+        story={
+          translation
+            ? { ...story, title: translation.title ?? story.title, body: translation.body }
+            : story
+        }
+      />
 
       {story.isPreview && (
         <div className="editorial-card mx-auto mt-8 max-w-story rounded-lg border p-6 text-center">
@@ -208,6 +313,19 @@ export function StoryDetailPage() {
       )}
 
       <div className="mx-auto mt-10 flex max-w-story flex-col gap-2">
+        {speechSupported && (
+          <Button
+            label={speaking ? 'Stop listening' : 'Listen to this story'}
+            variant={speaking ? 'secondary' : 'primary'}
+            leadingIcon={
+              speaking
+                ? <Square className="h-4 w-4 fill-current" aria-hidden />
+                : <Volume2 className="h-4 w-4" aria-hidden />
+            }
+            onClick={handleListen}
+            fullWidth
+          />
+        )}
         {!story.isMine && (
           <Button
             label={
@@ -226,6 +344,18 @@ export function StoryDetailPage() {
             fullWidth
           />
         )}
+        <Button
+          label={(fav ?? story.hasFavourited) ? 'Saved to favourites' : 'Save to favourites'}
+          variant="secondary"
+          leadingIcon={
+            <Bookmark
+              className={`h-4 w-4 ${(fav ?? story.hasFavourited) ? 'fill-current text-primary' : ''}`}
+              aria-hidden
+            />
+          }
+          onClick={handleFavourite}
+          fullWidth
+        />
         {!story.isPreview && (
           <Button
             label="Share as a card"
@@ -242,6 +372,15 @@ export function StoryDetailPage() {
           onClick={handleShare}
           fullWidth
         />
+        {story.isMine && (
+          <Button
+            label="Edit story"
+            variant="ghost"
+            leadingIcon={<PenLine className="h-4 w-4" aria-hidden />}
+            onClick={() => navigate(`/story/${story.id}/edit`)}
+            fullWidth
+          />
+        )}
       </div>
 
       <ShareCardModal

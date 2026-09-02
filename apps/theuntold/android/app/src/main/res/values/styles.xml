@@ -13,10 +13,11 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- Warm-paper status bar with dark icons, matching the app surface. -->
-        <item name="android:statusBarColor">#fdfaf6</item>
+        <!-- Light grey-beige status bar (theme surface-secondary) so the system
+             bar reads as separate from the app header. -->
+        <item name="android:statusBarColor">#f5f0e8</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">#fdfaf6</item>
+        <item name="android:navigationBarColor">#f5f0e8</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 

@@ -118,6 +118,27 @@ public class StoriesController : AuthorizedControllerBase
         return result is null ? NotFound(new { error = "not_found" }) : Ok(result);
     }
 
+    [HttpGet("{id:guid}/comments")]
+    public async Task<ActionResult<IReadOnlyList<CommentResponse>>> GetComments(Guid id, CancellationToken ct)
+    {
+        var (result, error) = await _stories.GetCommentsAsync(GetUserId(), GetUserType(), id, ct);
+        return error is null ? Ok(result) : ErrorResult(error);
+    }
+
+    [HttpPost("{id:guid}/comments")]
+    public async Task<ActionResult<CommentResponse>> AddComment(Guid id, [FromBody] AddCommentRequest request, CancellationToken ct)
+    {
+        var (result, error) = await _stories.AddCommentAsync(GetUserId(), GetUserType(), id, request.Body, ct);
+        return error is null ? Ok(result) : ErrorResult(error);
+    }
+
+    [HttpDelete("{id:guid}/comments/{commentId:guid}")]
+    public async Task<ActionResult> DeleteComment(Guid id, Guid commentId, CancellationToken ct)
+    {
+        var error = await _stories.DeleteCommentAsync(GetUserId(), id, commentId, ct);
+        return error is null ? NoContent() : ErrorResult(error);
+    }
+
     [HttpGet("{id:guid}/translation")]
     public async Task<ActionResult<StoryTranslationResponse>> GetTranslation(
         Guid id, [FromQuery] string lang, CancellationToken ct)

@@ -11,6 +11,11 @@ public class CreateStoryRequest
     public List<string> Tags { get; set; } = new();
 }
 
+public class AddCommentRequest
+{
+    public string Body { get; set; } = string.Empty;
+}
+
 public class ReportStoryRequest
 {
     public string Reason { get; set; } = "other";

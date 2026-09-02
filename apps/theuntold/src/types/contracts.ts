@@ -287,7 +287,17 @@ export type NotificationKind =
   | 'daily-prompt'
   | 'story-featured'
   | 'story-loved'
+  | 'story-comment'
   | 'family-shared';
+
+export interface StoryComment {
+  id: string;
+  author: Author;
+  body: string;
+  createdAt: string;
+  isMine: boolean;
+  canDelete: boolean;
+}
 
 export interface AppNotification {
   id: string;

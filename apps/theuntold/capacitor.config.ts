@@ -10,6 +10,9 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
+    // Android WebViews report env(safe-area-inset-*) as 0; let Capacitor pad
+    // the WebView below the status bar / above the nav bar instead.
+    adjustMarginsForEdgeToEdge: 'force',
   },
 };
 

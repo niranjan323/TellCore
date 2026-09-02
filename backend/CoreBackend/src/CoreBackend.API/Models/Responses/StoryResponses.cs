@@ -45,6 +45,14 @@ public record HeartResponse(int HeartCount, bool HasHearted);
 
 public record FavouriteResponse(bool HasFavourited);
 
+public record CommentResponse(
+    Guid Id,
+    AuthorResponse Author,
+    string Body,
+    DateTime CreatedAt,
+    bool IsMine,
+    bool CanDelete);
+
 public record StoryTranslationResponse(
     Guid StoryId,
     string LanguageCode,

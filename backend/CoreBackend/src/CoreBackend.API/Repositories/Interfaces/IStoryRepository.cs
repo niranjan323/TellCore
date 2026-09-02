@@ -10,6 +10,13 @@ public class StoryRow : Story
     public bool AuthorIsPublic { get; set; } = true;
 }
 
+/// <summary>Comment row joined with its author's public fields.</summary>
+public class CommentRow : StoryComment
+{
+    public string? AuthorName { get; set; }
+    public bool AuthorIsPublic { get; set; } = true;
+}
+
 public interface IStoryRepository
 {
     Task InsertAsync(Story story, CancellationToken ct = default);
@@ -44,6 +51,11 @@ public interface IStoryRepository
     Task<IReadOnlyList<StoryRow>> GetHeartedByUserAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<StoryRow>> GetFavouritedByUserAsync(Guid userId, CancellationToken ct = default);
     Task<StoryTranslation?> GetTranslationAsync(Guid storyId, string languageCode, CancellationToken ct = default);
+
+    Task InsertCommentAsync(StoryComment comment, CancellationToken ct = default);
+    Task<IReadOnlyList<CommentRow>> GetCommentsAsync(Guid storyId, CancellationToken ct = default);
+    Task<StoryComment?> GetCommentByIdAsync(Guid commentId, CancellationToken ct = default);
+    Task SoftDeleteCommentAsync(Guid commentId, Guid deletedBy, CancellationToken ct = default);
 
     Task<StoryRow?> GetFeaturedForDateAsync(Guid productId, DateTime dateUtc, CancellationToken ct = default);
     Task<StoryRow?> PickCommunityStoryForFeatureAsync(Guid productId, CancellationToken ct = default);

@@ -437,6 +437,50 @@ public class StoryRepository : IStoryRepository
             new { StoryId = storyId, Lang = languageCode }, cancellationToken: ct));
     }
 
+    public async Task InsertCommentAsync(StoryComment comment, CancellationToken ct = default)
+    {
+        const string sql = @"
+            INSERT INTO dbo.StoryComments (Id, StoryId, UserId, Body, CreatedBy)
+            VALUES (@Id, @StoryId, @UserId, @Body, @UserId)";
+        if (comment.Id == Guid.Empty) comment.Id = Guid.NewGuid();
+        using var conn = _factory.CreateConnection();
+        await conn.ExecuteAsync(new CommandDefinition(sql, comment, cancellationToken: ct));
+    }
+
+    public async Task<IReadOnlyList<CommentRow>> GetCommentsAsync(Guid storyId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            SELECT c.Id, c.CreatedAt, c.UpdatedAt, c.CreatedBy, c.UpdatedBy, c.IsDeleted,
+                   c.StoryId, c.UserId, c.Body,
+                   u.Name AS AuthorName, u.IsProfilePublic AS AuthorIsPublic
+            FROM dbo.StoryComments c
+            INNER JOIN dbo.Users u ON u.Id = c.UserId
+            WHERE c.StoryId = @StoryId AND c.IsDeleted = 0
+            ORDER BY c.CreatedAt";
+        using var conn = _factory.CreateConnection();
+        var rows = await conn.QueryAsync<CommentRow>(new CommandDefinition(sql, new { StoryId = storyId }, cancellationToken: ct));
+        return rows.AsList();
+    }
+
+    public async Task<StoryComment?> GetCommentByIdAsync(Guid commentId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            SELECT TOP 1 Id, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, IsDeleted, StoryId, UserId, Body
+            FROM dbo.StoryComments
+            WHERE Id = @Id AND IsDeleted = 0";
+        using var conn = _factory.CreateConnection();
+        return await conn.QuerySingleOrDefaultAsync<StoryComment>(new CommandDefinition(sql, new { Id = commentId }, cancellationToken: ct));
+    }
+
+    public async Task SoftDeleteCommentAsync(Guid commentId, Guid deletedBy, CancellationToken ct = default)
+    {
+        const string sql = @"
+            UPDATE dbo.StoryComments SET IsDeleted = 1, UpdatedAt = SYSUTCDATETIME(), UpdatedBy = @DeletedBy
+            WHERE Id = @Id";
+        using var conn = _factory.CreateConnection();
+        await conn.ExecuteAsync(new CommandDefinition(sql, new { Id = commentId, DeletedBy = deletedBy }, cancellationToken: ct));
+    }
+
     public async Task<StoryRow?> GetFeaturedForDateAsync(Guid productId, DateTime dateUtc, CancellationToken ct = default)
     {
         var sql = $@"

@@ -193,6 +193,30 @@ export async function fetchStoryTranslation(
   return data;
 }
 
+export async function fetchStoryComments(
+  storyId: string,
+): Promise<import('../types/contracts').StoryComment[]> {
+  const { data } = await apiClient.get<import('../types/contracts').StoryComment[]>(
+    `/stories/${storyId}/comments`,
+  );
+  return data;
+}
+
+export async function addStoryComment(
+  storyId: string,
+  body: string,
+): Promise<import('../types/contracts').StoryComment> {
+  const { data } = await apiClient.post<import('../types/contracts').StoryComment>(
+    `/stories/${storyId}/comments`,
+    { body },
+  );
+  return data;
+}
+
+export async function deleteStoryComment(storyId: string, commentId: string): Promise<void> {
+  await apiClient.delete(`/stories/${storyId}/comments/${commentId}`);
+}
+
 export async function reportStory(
   storyId: string,
   reason: string,

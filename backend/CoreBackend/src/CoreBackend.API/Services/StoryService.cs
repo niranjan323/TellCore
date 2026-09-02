@@ -323,6 +323,81 @@ public class StoryService : IStoryService
         return (new StoryTranslationResponse(storyId, languageCode, title, body, mapped.IsPreview, true), null);
     }
 
+    public async Task<(IReadOnlyList<CommentResponse>? Result, string? Error)> GetCommentsAsync(
+        Guid viewerId, string viewerType, Guid storyId, CancellationToken ct = default)
+    {
+        // Same visibility rules as reading the story.
+        var (story, error) = await GetByIdAsync(viewerId, viewerType, storyId, ct);
+        if (story is null) return (null, error ?? "not_found");
+
+        var isStoryOwner = story.IsMine;
+        var rows = await _stories.GetCommentsAsync(storyId, ct);
+        return (rows.Select(row => MapComment(row, viewerId, isStoryOwner)).ToList(), null);
+    }
+
+    public async Task<(CommentResponse? Result, string? Error)> AddCommentAsync(
+        Guid userId, string userType, Guid storyId, string body, CancellationToken ct = default)
+    {
+        body = body.Trim();
+        if (body.Length is < 1 or > 1000) return (null, "invalid_comment");
+
+        var (story, error) = await GetByIdAsync(userId, userType, storyId, ct);
+        if (story is null) return (null, error ?? "not_found");
+
+        var comment = new StoryComment { StoryId = storyId, UserId = userId, Body = body };
+        await _stories.InsertCommentAsync(comment, ct);
+
+        if (!story.IsMine)
+        {
+            try
+            {
+                await _notifications.InsertAsync(new Notification
+                {
+                    UserId = story.Author.Id,
+                    Kind = "story-comment",
+                    Title = "Someone wrote back",
+                    Body = $"A reader left a note on \"{story.Title}\".",
+                    LinkRoute = $"/story/{storyId}",
+                }, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to notify story owner about comment on {StoryId}", storyId);
+            }
+        }
+
+        var saved = (await _stories.GetCommentsAsync(storyId, ct)).First(c => c.Id == comment.Id);
+        return (MapComment(saved, userId, story.IsMine), null);
+    }
+
+    public async Task<string?> DeleteCommentAsync(Guid userId, Guid storyId, Guid commentId, CancellationToken ct = default)
+    {
+        var comment = await _stories.GetCommentByIdAsync(commentId, ct);
+        if (comment is null || comment.StoryId != storyId) return "not_found";
+
+        var story = await _stories.GetByIdAsync(storyId, ct);
+        var isCommentAuthor = comment.UserId == userId;
+        var isStoryOwner = story?.UserId == userId;
+        if (!isCommentAuthor && !isStoryOwner) return "forbidden";
+
+        await _stories.SoftDeleteCommentAsync(commentId, userId, ct);
+        return null;
+    }
+
+    private static CommentResponse MapComment(CommentRow row, Guid viewerId, bool viewerOwnsStory)
+    {
+        var isMine = row.UserId == viewerId;
+        var showAuthor = row.AuthorIsPublic || isMine;
+        var name = showAuthor && !string.IsNullOrWhiteSpace(row.AuthorName) ? row.AuthorName! : AnonymousAuthorName;
+        return new CommentResponse(
+            row.Id,
+            new AuthorResponse(row.UserId, name, null, TextUtils.Initials(name)),
+            row.Body,
+            row.CreatedAt,
+            isMine,
+            isMine || viewerOwnsStory);
+    }
+
     public async Task<StoryListResponse> GetCommunityFeedAsync(string productSlug, Guid viewerId, string viewerType, int page, int pageSize, CancellationToken ct = default)
     {
         var product = await _products.GetBySlugAsync(productSlug, ct);

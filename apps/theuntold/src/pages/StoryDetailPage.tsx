@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bookmark, Flag, Heart, ImageDown, Languages, Lock, MoreHorizontal, PenLine, Share2, Sparkles, Square, Trash2, Volume2 } from 'lucide-react';
+import { CommentsSection } from '../components/stories/CommentsSection';
 import { ReportStoryModal } from '../components/stories/ReportStoryModal';
 import { ShareCardModal } from '../components/stories/ShareCardModal';
 import { StoryReader } from '../components/stories/StoryReader';
@@ -382,6 +383,8 @@ export function StoryDetailPage() {
           />
         )}
       </div>
+
+      {!story.isPreview && <CommentsSection storyId={story.id} onToast={setToast} />}
 
       <ShareCardModal
         story={story}

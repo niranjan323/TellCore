@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Heart, PenLine, Sparkles, Users, type LucideIcon } from 'lucide-react';
+import { Bell, Heart, MessageCircle, PenLine, Sparkles, Users, type LucideIcon } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { fetchNotifications, markNotificationRead } from '../api/stories.api';
@@ -10,6 +10,7 @@ const ICONS: Record<NotificationKind, LucideIcon> = {
   'daily-prompt': PenLine,
   'story-featured': Sparkles,
   'story-loved': Heart,
+  'story-comment': MessageCircle,
   'family-shared': Users,
 };
 

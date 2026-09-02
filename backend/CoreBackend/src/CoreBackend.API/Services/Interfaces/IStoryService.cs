@@ -27,6 +27,11 @@ public interface IStoryService
     Task<IReadOnlyList<StoryResponse>> GetFavouritesAsync(Guid userId, string userType, CancellationToken ct = default);
     /// <summary>Error codes: not_found, invalid_language, translation_unavailable.</summary>
     Task<(StoryTranslationResponse? Result, string? Error)> GetTranslationAsync(Guid viewerId, string viewerType, Guid storyId, string languageCode, CancellationToken ct = default);
+    Task<(IReadOnlyList<CommentResponse>? Result, string? Error)> GetCommentsAsync(Guid viewerId, string viewerType, Guid storyId, CancellationToken ct = default);
+    /// <summary>Error codes: not_found, invalid_comment.</summary>
+    Task<(CommentResponse? Result, string? Error)> AddCommentAsync(Guid userId, string userType, Guid storyId, string body, CancellationToken ct = default);
+    /// <summary>Error codes: not_found, forbidden.</summary>
+    Task<string?> DeleteCommentAsync(Guid userId, Guid storyId, Guid commentId, CancellationToken ct = default);
     Task<StoryListResponse> GetCommunityFeedAsync(string productSlug, Guid viewerId, string viewerType, int page, int pageSize, CancellationToken ct = default);
     Task<StoryResponse?> GetStoryOfTheDayAsync(string productSlug, Guid viewerId, string viewerType, CancellationToken ct = default);
     Task<IReadOnlyList<StoryResponse>> SearchAsync(string productSlug, Guid viewerId, string viewerType, string query, CancellationToken ct = default);

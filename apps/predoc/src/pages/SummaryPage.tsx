@@ -88,10 +88,10 @@ export function SummaryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-page animate-fade-in py-4 md:py-8">
+    <div className="mx-auto max-w-page animate-page py-4 md:py-8">
       <SummaryView summary={summary} />
 
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="mt-7 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
         <Button
           label="Share"
           variant="primary"
@@ -99,7 +99,11 @@ export function SummaryPage() {
           onClick={handleShare}
           fullWidth
         />
-        {canExportPdf && <PdfExport summary={summary} />}
+        {canExportPdf ? (
+          <PdfExport summary={summary} />
+        ) : (
+          <span className="hidden md:block" />
+        )}
         <Button
           label="Start over"
           variant="ghost"
@@ -112,7 +116,7 @@ export function SummaryPage() {
       {shareMessage && (
         <div
           role="status"
-          className="mt-4 rounded-md bg-primary-light px-4 py-2 text-center text-sm font-medium text-primary-dark"
+          className="mt-4 animate-page rounded-md bg-primary-light px-4 py-2 text-center text-sm font-medium text-primary-dark"
         >
           {shareMessage}
         </div>

@@ -10,6 +10,7 @@ public class AuthService : IAuthService
     private readonly IUserRepository _users;
     private readonly IJwtService _jwt;
     private readonly IGoogleAuthService _google;
+    private readonly ISettingsRepository _settings;
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
 
@@ -17,14 +18,75 @@ public class AuthService : IAuthService
         IUserRepository users,
         IJwtService jwt,
         IGoogleAuthService google,
+        ISettingsRepository settings,
         IConfiguration config,
         ILogger<AuthService> logger)
     {
         _users = users;
         _jwt = jwt;
         _google = google;
+        _settings = settings;
         _config = config;
         _logger = logger;
+    }
+
+    public async Task<(AuthResponse? Result, string? Error)> RegisterAsync(string email, string password, string? name, CancellationToken ct = default)
+    {
+        email = email.Trim().ToLowerInvariant();
+        if (email.Length is < 5 or > 200 || !email.Contains('@') || !email.Contains('.'))
+            return (null, "invalid_email");
+        if (password.Length < 8)
+            return (null, "weak_password");
+
+        var existing = await _users.GetByEmailAsync(email, ct);
+        if (existing is not null)
+            return (null, existing.GoogleId is not null && existing.PasswordHash is null
+                ? "email_uses_google"
+                : "email_in_use");
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            UserType = "registered",
+            Email = email,
+            Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            LastLoginAt = DateTime.UtcNow,
+        };
+        await _users.InsertAsync(user, ct);
+        _logger.LogInformation("Created registered user {UserId} via email/password", user.Id);
+
+        var access = _jwt.GenerateAccessToken(user, TimeSpan.FromHours(1));
+        var refresh = await CreateRefreshTokenAsync(user.Id, ct);
+        return (new AuthResponse(access, refresh, user.UserType, user.Id, user.Email), null);
+    }
+
+    public async Task<(AuthResponse? Result, string? Error)> LoginWithPasswordAsync(string email, string password, CancellationToken ct = default)
+    {
+        email = email.Trim().ToLowerInvariant();
+        var user = await _users.GetByEmailAsync(email, ct);
+        // Generic failure on purpose — never reveal whether the email exists.
+        if (user is null || user.PasswordHash is null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            return (null, "invalid_credentials");
+
+        await _users.UpdateLastLoginAsync(user.Id, ct);
+        var access = _jwt.GenerateAccessToken(user, TimeSpan.FromHours(1));
+        var refresh = await CreateRefreshTokenAsync(user.Id, ct);
+        return (new AuthResponse(access, refresh, user.UserType, user.Id, user.Email), null);
+    }
+
+    public async Task<IReadOnlyList<string>> GetEnabledMethodsAsync(CancellationToken ct = default)
+    {
+        var json = await _settings.GetValueAsync("auth.methods", ct: ct);
+        if (string.IsNullOrWhiteSpace(json)) return new[] { "google", "password", "guest" };
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? new List<string> { "guest" };
+        }
+        catch
+        {
+            return new[] { "guest" };
+        }
     }
 
     public async Task<AuthResponse> CreateGuestAsync(string? deviceToken, CancellationToken ct = default)

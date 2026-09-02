@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   Bell,
   BookOpen,
@@ -11,7 +11,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { NavigationItemResponse } from '../../types/contracts';
-import { FAB } from '../ui/FAB';
 
 const ICONS: Record<string, LucideIcon> = {
   home: Home,
@@ -63,45 +62,27 @@ export function DesktopSideNav({ items }: NavProps) {
 }
 
 export function MobileBottomNav({ items }: NavProps) {
-  const navigate = useNavigate();
   if (!items.length) return null;
 
-  const fabItem = items.find((i) => i.key === 'today') ?? null;
-  const tabItems = items.filter(
-    (i) => i.key !== 'today' && i.key !== 'notifs' && i.key !== 'vault',
-  );
-  const half = Math.ceil(tabItems.length / 2);
-  const leftItems = tabItems.slice(0, half);
-  const rightItems = tabItems.slice(half);
+  // Every primary item (including Write) is a regular tab — notifications and
+  // vault live in the top bar / side rail.
+  const tabItems = items.filter((i) => i.key !== 'notifs' && i.key !== 'vault');
 
   return (
-    <>
-      <nav
-        aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t bg-surface md:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-surface md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <ul
+        className="grid items-stretch"
+        style={{ gridTemplateColumns: `repeat(${tabItems.length}, minmax(0, 1fr))` }}
       >
-        <ul className="grid grid-cols-5 items-stretch">
-          {leftItems.map((item) => (
-            <MobileTab key={item.key} item={item} />
-          ))}
-          <li className="relative flex items-center justify-center" aria-hidden />
-          {rightItems.map((item) => (
-            <MobileTab key={item.key} item={item} />
-          ))}
-        </ul>
-      </nav>
-
-      {fabItem && (
-        <div className="md:hidden">
-          <FAB
-            onClick={() => navigate(fabItem.route)}
-            ariaLabel={fabItem.label}
-            icon={<PenLine className="h-7 w-7" aria-hidden />}
-          />
-        </div>
-      )}
-    </>
+        {tabItems.map((item) => (
+          <MobileTab key={item.key} item={item} />
+        ))}
+      </ul>
+    </nav>
   );
 }
 

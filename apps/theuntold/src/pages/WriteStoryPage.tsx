@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { Button } from '../components/ui/Button';
 import { TextEditor } from '../components/writing/TextEditor';
-import { Toast } from '../components/ui/Toast';
+import { VisibilityPicker } from '../components/writing/VisibilityPicker';
+import { Toast, type ToastKind } from '../components/ui/Toast';
+import { createStory, processStory } from '../api/stories.api';
 import { useDraftStore } from '../store/draftStore';
 import { usePrompt } from '../hooks/usePrompt';
 
@@ -19,14 +23,18 @@ function relativeAgo(iso: string | null): string | null {
 
 export function WriteStoryPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { prompt } = usePrompt();
   const text = useDraftStore((s) => s.text);
   const setText = useDraftStore((s) => s.setText);
+  const tags = useDraftStore((s) => s.tags);
+  const visibility = useDraftStore((s) => s.visibility);
+  const setVisibility = useDraftStore((s) => s.setVisibility);
   const lastSavedAt = useDraftStore((s) => s.lastSavedAt);
   const markSaved = useDraftStore((s) => s.markSaved);
   const reset = useDraftStore((s) => s.reset);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; kind: ToastKind } | null>(null);
 
   // Auto-save every 3 seconds when text changes.
   useEffect(() => {
@@ -42,43 +50,85 @@ export function WriteStoryPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  function handleSave() {
+  async function handleSave() {
     if (!text.trim()) return;
     setSaving(true);
-    markSaved();
-    setToast('Story saved to your library');
-    setTimeout(() => {
-      reset();
+    try {
+      const created = await createStory({
+        text,
+        kind: 'text',
+        visibility,
+        promptKey: prompt.key,
+        tags,
+      });
+      await processStory(created.storyId);
+      await queryClient.invalidateQueries({ queryKey: ['my-stories'] });
+      await queryClient.invalidateQueries({ queryKey: ['streak'] });
+      setToast({ message: 'Story saved to your library', kind: 'success' });
+      setTimeout(() => {
+        reset();
+        setSaving(false);
+        navigate('/stories', { replace: true });
+      }, 900);
+    } catch (error) {
       setSaving(false);
-      navigate('/stories', { replace: true });
-    }, 900);
+      const code = isAxiosError(error) ? error.response?.data?.error : undefined;
+      setToast({
+        message:
+          code === 'daily_limit_reached'
+            ? "You've written today's page — come back tomorrow, or go unlimited with Premium."
+            : code === 'story_limit_reached'
+              ? 'Free story limit reached — upgrade to keep writing.'
+              : 'Could not save right now. Your draft is safe — try again.',
+        kind: 'error',
+      });
+    }
   }
 
   return (
-    <div className="min-h-dvh bg-surface">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-surface/95 px-4 py-3 backdrop-blur md:px-8">
+    <div className="relative min-h-dvh overflow-hidden bg-surface">
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+        <div className="absolute inset-0 bg-paper-grain opacity-80" />
+        <div className="absolute inset-0 bg-noise opacity-40 mix-blend-multiply" />
+        {/* faint ruled lines like a notebook */}
+        <div
+          className="absolute inset-0 opacity-25"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(to bottom, transparent 0, transparent 35px, rgba(89,71,55,0.10) 35px, rgba(89,71,55,0.10) 36px)',
+          }}
+        />
+      </div>
+
+      <header className="pt-safe sticky top-0 z-10 flex items-center justify-between border-b bg-surface/80 px-4 py-3 backdrop-blur md:px-10">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-sm font-medium text-text-secondary backdrop-blur transition-colors hover:bg-surface hover:text-text-primary"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back
         </button>
-        {lastSavedAt && (
-          <span className="inline-flex items-center gap-1.5 font-handwritten text-base text-text-secondary">
-            <Check className="h-4 w-4" aria-hidden />
-            {relativeAgo(lastSavedAt)}
-          </span>
-        )}
+        <p className="hidden font-handwritten text-base text-text-secondary md:block">
+          A page from {prompt.dateLabel}
+        </p>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1 text-xs font-medium text-primary-dark transition-opacity ${
+            lastSavedAt ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <Check className="h-3.5 w-3.5" aria-hidden />
+          {lastSavedAt ? relativeAgo(lastSavedAt) : 'Saving…'}
+        </span>
       </header>
 
-      <main className="px-4 py-8 md:px-8 md:py-12">
+      <main className="animate-page relative px-4 py-10 md:px-10 md:py-16">
         <TextEditor value={text} onChange={setText} prompt={prompt.question} />
       </main>
 
-      <footer className="sticky bottom-0 border-t bg-surface px-4 py-3 md:px-8 md:py-4">
-        <div className="mx-auto flex max-w-story justify-end">
+      <footer className="sticky bottom-0 border-t bg-surface/85 px-4 py-3 backdrop-blur md:px-10 md:py-4">
+        <div className="mx-auto flex max-w-story flex-wrap items-center justify-between gap-3">
+          <VisibilityPicker value={visibility} onChange={setVisibility} />
           <Button
             label="Save story"
             variant="primary"
@@ -89,7 +139,7 @@ export function WriteStoryPage() {
         </div>
       </footer>
 
-      {toast && <Toast message={toast} kind="success" onDismiss={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} kind={toast.kind} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

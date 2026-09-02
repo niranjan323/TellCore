@@ -11,6 +11,7 @@ import {
   shouldShowQuestion,
 } from '../components/questions/ConditionEngine';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
+import { MeshBackground } from '../components/ui/MeshBackground';
 import { useAppConfig } from '../hooks/useAppConfig';
 import { useDefaultFormSet } from '../hooks/useFormSet';
 import { submitResponse } from '../api/responses.api';
@@ -128,13 +129,40 @@ export function QuestionsPage() {
     navigate('/', { replace: true });
   }
 
+  const pct = total > 0 ? ((safeIndex + 1) / total) * 100 : 0;
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+
   return (
-    <div className="flex min-h-dvh flex-col bg-surface-secondary">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-surface">
+      <MeshBackground variant="breath" />
+
+      {/* Top progress strip */}
       <ProgressBar value={safeIndex + 1} max={total} label="Form progress" />
 
-      <header className="flex items-center justify-between px-4 py-3 md:px-6">
-        <div className="text-sm text-text-secondary">
-          Question {safeIndex + 1} of {total}
+      <header className="relative z-10 flex items-center justify-between px-4 py-3 md:px-8">
+        <div className="inline-flex items-center gap-3 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-sm text-text-secondary backdrop-blur">
+          {/* Circular progress ring + step counter */}
+          <svg width="38" height="38" viewBox="0 0 44 44" aria-hidden>
+            <circle cx="22" cy="22" r={radius} fill="none" stroke="var(--primary-light)" strokeWidth="3.5" />
+            <circle
+              cx="22"
+              cy="22"
+              r={radius}
+              fill="none"
+              stroke="var(--primary)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - pct / 100)}
+              transform="rotate(-90 22 22)"
+              style={{ transition: 'stroke-dashoffset 0.45s ease' }}
+            />
+          </svg>
+          <span className="tabular-nums">
+            <span className="font-semibold text-text-primary">{safeIndex + 1}</span>
+            <span className="text-text-hint"> / {total}</span>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <LanguageSelector
@@ -149,15 +177,15 @@ export function QuestionsPage() {
             type="button"
             onClick={handleClose}
             aria-label="Close"
-            className="rounded-md p-2 text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+            className="rounded-full p-2 text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-form flex-1 flex-col justify-center px-4 py-6 md:px-6">
-        <div key={question.id} className="animate-fade-in">
+      <main className="relative z-10 mx-auto flex w-full max-w-form flex-1 flex-col justify-center px-4 py-6 md:px-6">
+        <div key={question.id} className="glass-card animate-page rounded-[20px] p-6 md:p-8">
           <QuestionRenderer
             question={question}
             value={answers[question.key]}

@@ -1,5 +1,7 @@
 export type UserType = 'guest' | 'registered' | 'paid';
 
+export type AuthMethod = 'google' | 'password' | 'guest';
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
@@ -128,6 +130,7 @@ export interface UserResponse {
   email: string | null;
   name: string | null;
   preferredLanguage: string | null;
+  isProfilePublic?: boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -147,11 +150,14 @@ export interface Author {
   initials: string;
 }
 
+export type StoryProcessingStatus = 'draft' | 'processing' | 'published' | 'flagged';
+
 export interface Story {
   id: string;
   author: Author;
   title: string;
   excerpt: string;
+  summary?: string | null;
   body: string;
   kind: StoryKind;
   audioUrl: string | null;
@@ -163,6 +169,74 @@ export interface Story {
   isFeatured: boolean;
   heartCount: number;
   visibility: StoryVisibility;
+  // Server-side gating/processing fields (absent in older cached data).
+  viewCount?: number;
+  status?: StoryProcessingStatus;
+  moderationReason?: string | null;
+  originalLanguage?: string | null;
+  isPreview?: boolean;
+  isMine?: boolean;
+  hasHearted?: boolean;
+  hasFavourited?: boolean;
+}
+
+export interface StoryTranslation {
+  storyId: string;
+  languageCode: string;
+  title: string | null;
+  body: string;
+  isPreview: boolean;
+  isAiGenerated: boolean;
+}
+
+export interface CreateStoryInput {
+  title?: string | null;
+  text?: string | null;
+  kind: StoryKind;
+  visibility: StoryVisibility;
+  promptKey?: string | null;
+  tags?: string[];
+}
+
+export interface CreatedStory {
+  storyId: string;
+  status: StoryProcessingStatus;
+}
+
+export interface StoryStatus {
+  storyId: string;
+  status: StoryProcessingStatus;
+  moderationReason: string | null;
+}
+
+export interface HeartResult {
+  heartCount: number;
+  hasHearted: boolean;
+}
+
+export interface VaultInvite {
+  token: string;
+  inviteUrl: string;
+  expiresAt: string;
+}
+
+export interface BillingPlan {
+  key: string;
+  name: string;
+  interval: string;
+  display: string;
+  description: string;
+}
+
+export interface BillingStatus {
+  userType: UserType;
+  planKey: string | null;
+  status: string | null;
+  currentPeriodEnd: string | null;
+}
+
+export interface CheckoutSession {
+  url: string;
 }
 
 export interface DailyPrompt {
@@ -213,7 +287,17 @@ export type NotificationKind =
   | 'daily-prompt'
   | 'story-featured'
   | 'story-loved'
+  | 'story-comment'
   | 'family-shared';
+
+export interface StoryComment {
+  id: string;
+  author: Author;
+  body: string;
+  createdAt: string;
+  isMine: boolean;
+  canDelete: boolean;
+}
 
 export interface AppNotification {
   id: string;
@@ -222,4 +306,5 @@ export interface AppNotification {
   body: string;
   createdAt: string;
   read: boolean;
+  linkRoute?: string | null;
 }

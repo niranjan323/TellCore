@@ -20,19 +20,22 @@ export function AppShell({ children, fullBleed = false }: AppShellProps) {
   const unread = (notifs.data ?? []).filter((n) => !n.read).length;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface">
+    <div className="flex min-h-dvh flex-col overflow-x-clip bg-surface">
       <TopBar navItems={items} unreadCount={unread} />
 
-      <div className="mx-auto flex w-full max-w-page flex-1 md:gap-6 md:px-8">
+      <div className="mx-auto flex w-full min-w-0 max-w-page flex-1 md:gap-6 md:px-8">
         <aside className="hidden md:block md:w-52 md:shrink-0 md:py-6">
           <DesktopSideNav items={items} />
         </aside>
 
+        {/* min-w-0: flex items default to min-width auto, which lets wide
+            children (the recent-stories carousel) stretch the page wider than
+            the phone screen instead of scrolling. */}
         <main
           className={
             fullBleed
-              ? 'flex-1 pb-28 md:pb-12'
-              : 'flex-1 px-4 pb-28 pt-4 md:px-0 md:pb-12 md:pt-6'
+              ? 'min-w-0 flex-1 pb-28 md:pb-12'
+              : 'min-w-0 flex-1 px-4 pb-28 pt-4 md:px-0 md:pb-12 md:pt-6'
           }
         >
           {children}

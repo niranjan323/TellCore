@@ -1,13 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
-import { Bell, Heart, PenLine, Sparkles, Users, type LucideIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Bell, Heart, MessageCircle, PenLine, Sparkles, Users, type LucideIcon } from 'lucide-react';
 import { Spinner } from '../components/ui/Spinner';
-import { fetchNotifications } from '../api/stories.api';
+import { ScrollReveal } from '../components/ui/ScrollReveal';
+import { fetchNotifications, markNotificationRead } from '../api/stories.api';
 import type { AppNotification, NotificationKind } from '../types/contracts';
 
 const ICONS: Record<NotificationKind, LucideIcon> = {
   'daily-prompt': PenLine,
   'story-featured': Sparkles,
   'story-loved': Heart,
+  'story-comment': MessageCircle,
   'family-shared': Users,
 };
 
@@ -22,17 +25,42 @@ function relativeDate(iso: string): string {
 }
 
 export function NotificationsPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['notifications', 'theuntold'],
     queryFn: fetchNotifications,
   });
 
+  async function handleOpen(notification: AppNotification) {
+    if (!notification.read) {
+      try {
+        await markNotificationRead(notification.id);
+        await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      } catch {
+        // read state is a nicety — never block navigation on it
+      }
+    }
+    if (notification.linkRoute) navigate(notification.linkRoute);
+  }
+
+  const unread = (data ?? []).filter((n) => !n.read).length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-7 animate-page">
       <header>
-        <h1 className="font-display text-2xl font-semibold text-text-primary md:text-3xl">
+        <p className="font-handwritten text-xl text-primary-dark md:text-2xl">
+          From the post box
+        </p>
+        <h1 className="mt-1 font-display text-[32px] font-semibold leading-tight tracking-tight text-text-primary md:text-[44px]">
           Notifications
         </h1>
+        {unread > 0 && (
+          <p className="mt-2 text-sm text-text-secondary">
+            <span className="inline-block h-2 w-2 rounded-full bg-primary align-middle" />{' '}
+            {unread} unread
+          </p>
+        )}
       </header>
 
       {isLoading ? (
@@ -40,14 +68,16 @@ export function NotificationsPage() {
           <Spinner size="lg" />
         </div>
       ) : (data ?? []).length === 0 ? (
-        <p className="rounded-lg border bg-surface p-10 text-center text-text-secondary">
+        <p className="postcard rounded-[20px] p-12 text-center text-text-secondary">
           <Bell className="mx-auto mb-3 h-8 w-8 text-text-hint" aria-hidden />
           You&apos;re all caught up.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {(data ?? []).map((n) => (
-            <NotificationItem key={n.id} notification={n} />
+        <ul className="flex flex-col gap-3" data-stagger>
+          {(data ?? []).map((n, i) => (
+            <ScrollReveal as="li" key={n.id} variant="rise" index={i}>
+              <NotificationItem notification={n} onOpen={() => handleOpen(n)} />
+            </ScrollReveal>
           ))}
         </ul>
       )}
@@ -55,12 +85,24 @@ export function NotificationsPage() {
   );
 }
 
-function NotificationItem({ notification }: { notification: AppNotification }) {
+function NotificationItem({
+  notification,
+  onOpen,
+}: {
+  notification: AppNotification;
+  onOpen: () => void;
+}) {
   const Icon = ICONS[notification.kind] ?? Bell;
   const celebratory = notification.kind === 'story-featured';
   return (
     <li
-      className={`relative flex items-start gap-3 overflow-hidden rounded-md border p-4 ${
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onOpen();
+      }}
+      className={`relative flex cursor-pointer items-start gap-3 overflow-hidden rounded-md border p-4 transition-shadow hover:shadow-sm ${
         celebratory
           ? 'border-accent bg-accent/15 animate-warm-glow'
           : notification.read

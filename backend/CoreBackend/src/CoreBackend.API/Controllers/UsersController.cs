@@ -26,7 +26,7 @@ public class UsersController : ControllerBase
         var userId = GetUserId();
         var user = await _users.GetByIdAsync(userId, ct);
         if (user is null) return NotFound();
-        return Ok(new UserResponse(user.Id, user.UserType, user.Email, user.Name, user.PreferredLanguage));
+        return Ok(new UserResponse(user.Id, user.UserType, user.Email, user.Name, user.PreferredLanguage, user.IsProfilePublic));
     }
 
     [HttpGet("sessions")]

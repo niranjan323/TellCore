@@ -11,6 +11,12 @@ public class CreateStoryRequest
     public List<string> Tags { get; set; } = new();
 }
 
+public class ReportStoryRequest
+{
+    public string Reason { get; set; } = "other";
+    public string? Details { get; set; }
+}
+
 public class UpdateStoryRequest
 {
     public string? Title { get; set; }

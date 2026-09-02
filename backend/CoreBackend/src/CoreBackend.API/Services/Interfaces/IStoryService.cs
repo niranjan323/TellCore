@@ -19,6 +19,8 @@ public interface IStoryService
     Task<(StoryResponse? Story, string? Error)> UpdateAsync(Guid userId, Guid storyId, UpdateStoryRequest request, CancellationToken ct = default);
     Task<string?> DeleteAsync(Guid userId, Guid storyId, CancellationToken ct = default);
     Task RecordViewAsync(Guid storyId, Guid? viewerUserId, CancellationToken ct = default);
+    /// <summary>Error codes: not_found, report_own, invalid_reason, already_reported.</summary>
+    Task<string?> ReportAsync(Guid userId, Guid storyId, string reason, string? details, CancellationToken ct = default);
     Task<HeartResponse?> ToggleHeartAsync(Guid userId, Guid storyId, CancellationToken ct = default);
     Task<StoryListResponse> GetCommunityFeedAsync(string productSlug, Guid viewerId, string viewerType, int page, int pageSize, CancellationToken ct = default);
     Task<StoryResponse?> GetStoryOfTheDayAsync(string productSlug, Guid viewerId, string viewerType, CancellationToken ct = default);

@@ -34,6 +34,9 @@ public interface IStoryRepository
     Task<IReadOnlyList<StoryRow>> GetByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
 
     Task RecordViewAsync(Guid storyId, Guid? viewerUserId, CancellationToken ct = default);
+    /// <summary>False when this user already reported this story.</summary>
+    Task<bool> TryInsertReportAsync(StoryReport report, CancellationToken ct = default);
+    Task<int> CountDistinctReportsAsync(Guid storyId, CancellationToken ct = default);
     Task<bool> ToggleHeartAsync(Guid storyId, Guid userId, CancellationToken ct = default);
     Task<IReadOnlySet<Guid>> GetHeartedStoryIdsAsync(IEnumerable<Guid> storyIds, Guid userId, CancellationToken ct = default);
 

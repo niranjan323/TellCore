@@ -308,6 +308,32 @@ public class StoryRepository : IStoryRepository
             new { StoryId = storyId, ViewerUserId = viewerUserId }, cancellationToken: ct));
     }
 
+    public async Task<bool> TryInsertReportAsync(StoryReport report, CancellationToken ct = default)
+    {
+        const string sql = @"
+            IF NOT EXISTS (SELECT 1 FROM dbo.StoryReports
+                           WHERE StoryId = @StoryId AND ReporterUserId = @ReporterUserId AND IsDeleted = 0)
+            BEGIN
+                INSERT INTO dbo.StoryReports (Id, StoryId, ReporterUserId, Reason, Details, Status, CreatedBy)
+                VALUES (@Id, @StoryId, @ReporterUserId, @Reason, @Details, @Status, @ReporterUserId);
+                SELECT CAST(1 AS BIT);
+            END
+            ELSE
+                SELECT CAST(0 AS BIT);";
+        if (report.Id == Guid.Empty) report.Id = Guid.NewGuid();
+        using var conn = _factory.CreateConnection();
+        return await conn.ExecuteScalarAsync<bool>(new CommandDefinition(sql, report, cancellationToken: ct));
+    }
+
+    public async Task<int> CountDistinctReportsAsync(Guid storyId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            SELECT COUNT(DISTINCT ReporterUserId) FROM dbo.StoryReports
+            WHERE StoryId = @StoryId AND IsDeleted = 0 AND Status = 'open'";
+        using var conn = _factory.CreateConnection();
+        return await conn.ExecuteScalarAsync<int>(new CommandDefinition(sql, new { StoryId = storyId }, cancellationToken: ct));
+    }
+
     public async Task<bool> ToggleHeartAsync(Guid storyId, Guid userId, CancellationToken ct = default)
     {
         const string sql = @"

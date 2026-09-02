@@ -89,6 +89,13 @@ public class StoriesController : AuthorizedControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/report")]
+    public async Task<ActionResult> Report(Guid id, [FromBody] ReportStoryRequest request, CancellationToken ct)
+    {
+        var error = await _stories.ReportAsync(GetUserId(), id, request.Reason, request.Details, ct);
+        return error is null ? NoContent() : ErrorResult(error);
+    }
+
     [HttpPost("{id:guid}/heart")]
     public async Task<ActionResult<HeartResponse>> ToggleHeart(Guid id, CancellationToken ct)
     {

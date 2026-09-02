@@ -167,6 +167,14 @@ export async function recordStoryView(storyId: string): Promise<void> {
   }
 }
 
+export async function reportStory(
+  storyId: string,
+  reason: string,
+  details?: string,
+): Promise<void> {
+  await apiClient.post(`/stories/${storyId}/report`, { reason, details });
+}
+
 export async function toggleStoryHeart(storyId: string): Promise<HeartResult> {
   const { data } = await apiClient.post<HeartResult>(`/stories/${storyId}/heart`);
   return data;

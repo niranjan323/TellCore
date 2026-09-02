@@ -210,6 +210,37 @@ public class StoryService : IStoryService
     public Task RecordViewAsync(Guid storyId, Guid? viewerUserId, CancellationToken ct = default)
         => _stories.RecordViewAsync(storyId, viewerUserId, ct);
 
+    private static readonly string[] ValidReportReasons = { "harmful", "spam", "private-info", "plagiarism", "other" };
+
+    public async Task<string?> ReportAsync(Guid userId, Guid storyId, string reason, string? details, CancellationToken ct = default)
+    {
+        if (!ValidReportReasons.Contains(reason)) return "invalid_reason";
+        var story = await _stories.GetByIdAsync(storyId, ct);
+        if (story is null) return "not_found";
+        if (story.UserId == userId) return "report_own";
+
+        var isNew = await _stories.TryInsertReportAsync(new StoryReport
+        {
+            StoryId = storyId,
+            ReporterUserId = userId,
+            Reason = reason,
+            Details = string.IsNullOrWhiteSpace(details) ? null : details.Trim(),
+        }, ct);
+        if (!isNew) return "already_reported";
+
+        // Enough distinct reports → pull the story from circulation pending review.
+        var thresholdSetting = await _settings.GetValueAsync("stories.reports.autohide", ct: ct);
+        var threshold = int.TryParse(thresholdSetting, out var t) && t > 0 ? t : 3;
+        var reportCount = await _stories.CountDistinctReportsAsync(storyId, ct);
+        if (reportCount >= threshold && story.Status == "published")
+        {
+            await _stories.UpdateStatusAsync(storyId, "flagged",
+                "This story is under review after reader reports.", ct);
+            _logger.LogWarning("Story {StoryId} auto-hidden after {Count} reports", storyId, reportCount);
+        }
+        return null;
+    }
+
     public async Task<HeartResponse?> ToggleHeartAsync(Guid userId, Guid storyId, CancellationToken ct = default)
     {
         var story = await _stories.GetByIdAsync(storyId, ct);

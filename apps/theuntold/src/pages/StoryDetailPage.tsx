@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Heart, ImageDown, Lock, MoreHorizontal, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Flag, Heart, ImageDown, Lock, MoreHorizontal, PenLine, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { ReportStoryModal } from '../components/stories/ReportStoryModal';
 import { ShareCardModal } from '../components/stories/ShareCardModal';
 import { StoryReader } from '../components/stories/StoryReader';
 import { Button } from '../components/ui/Button';
@@ -22,6 +23,7 @@ export function StoryDetailPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [heart, setHeart] = useState<{ count: number; hearted: boolean } | null>(null);
 
@@ -120,6 +122,26 @@ export function StoryDetailPage() {
               onMouseLeave={() => setMenuOpen(false)}
             >
               <MenuButton onClick={handleShare} icon={<Share2 className="h-4 w-4" aria-hidden />} label="Share" />
+              {story.isMine && (
+                <MenuButton
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate(`/story/${story.id}/edit`);
+                  }}
+                  icon={<PenLine className="h-4 w-4" aria-hidden />}
+                  label="Edit story"
+                />
+              )}
+              {!story.isMine && (
+                <MenuButton
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setReportOpen(true);
+                  }}
+                  icon={<Flag className="h-4 w-4" aria-hidden />}
+                  label="Report story"
+                />
+              )}
               {story.isMine && story.visibility !== 'community' && (
                 <MenuButton
                   onClick={() => {
@@ -226,6 +248,13 @@ export function StoryDetailPage() {
         story={story}
         open={shareCardOpen}
         onClose={() => setShareCardOpen(false)}
+        onToast={setToast}
+      />
+
+      <ReportStoryModal
+        storyId={story.id}
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
         onToast={setToast}
       />
 

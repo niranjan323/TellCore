@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import { AppShell } from './components/layout/AppShell';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { EditStoryPage } from './pages/EditStoryPage';
 import { FamilyVaultPage } from './pages/FamilyVaultPage';
 import { FeaturedFeedPage } from './pages/FeaturedFeedPage';
 import { MyStoriesPage } from './pages/MyStoriesPage';
@@ -176,6 +177,14 @@ export default function App() {
             <Shell>
               <StoryDetailPage />
             </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/story/:storyId/edit"
+        element={
+          <RequireAuth>
+            <EditStoryPage />
           </RequireAuth>
         }
       />
